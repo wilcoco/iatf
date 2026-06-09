@@ -1,0 +1,1063 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// 1. 기준정보 (Master Data)
+// ============================================
+
+model Department {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique @db.VarChar(20)
+  name      String   @db.VarChar(100)
+  parentId  Int?     @map("parent_id")
+  parent    Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children  Department[] @relation("DepartmentHierarchy")
+  managerId Int?     @map("manager_id")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users               User[]
+  targetControlItems  ControlItem[] @relation("TargetDepartment")
+  responsibleControlItems ControlItem[] @relation("ResponsibleDepartment")
+  processes           Process[]
+  equipment           Equipment[]
+  measuringInstruments MeasuringInstrument[]
+  kpiDefinitions      KpiDefinition[]
+  emergencyTypes      EmergencyType[]
+  auditRecords        AuditRecord[]
+
+  @@map("departments")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  employeeId   String   @unique @map("employee_id") @db.VarChar(20)
+  name         String   @db.VarChar(50)
+  email        String?  @unique @db.VarChar(100)
+  passwordHash String?  @map("password_hash") @db.VarChar(255)
+  departmentId Int?     @map("department_id")
+  department   Department? @relation(fields: [departmentId], references: [id])
+  position     String?  @db.VarChar(50)
+  role         String   @default("user") @db.VarChar(20) // admin, manager, user
+  hireDate     DateTime? @map("hire_date") @db.Date
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  responsibleControlItems ControlItem[]
+  inspectionRecords       InspectionRecord[] @relation("Inspector")
+  verifiedInspections     InspectionRecord[] @relation("Verifier")
+  equipmentDailyChecks    EquipmentDailyCheck[]
+  maintenancePerformed    MaintenanceRecord[] @relation("PerformedBy")
+  maintenanceVerified     MaintenanceRecord[] @relation("VerifiedBy")
+  moldRecords             MoldRecord[]
+  jigRecords              JigRecord[]
+  productionInspections   ProductionInspection[]
+  incomingInspections     IncomingInspection[]
+  shippingInspections     ShippingInspection[]
+  reliabilityTests        ReliabilityTest[]
+  adhesionTests           AdhesionTest[]
+  colorMeasurements       ColorMeasurement[]
+  coatingThickness        CoatingThickness[]
+  gageRnrStudies          GageRnrStudy[]
+  processCapabilities     ProcessCapability[]
+  trainingRecords         TrainingRecord[]
+  qualificationAssessments QualificationAssessment[] @relation("Assessed")
+  evaluator1Assessments   QualificationAssessment[] @relation("Evaluator1")
+  evaluator2Assessments   QualificationAssessment[] @relation("Evaluator2")
+  evaluator3Assessments   QualificationAssessment[] @relation("Evaluator3")
+  reportedNonconformances Nonconformance[]
+  correctiveActionLeader  CorrectiveAction[] @relation("TeamLeader")
+  correctiveActionVerifier CorrectiveAction[] @relation("VerifiedBy")
+  leadAudits              AuditPlan[]
+  auditRecords            AuditRecord[] @relation("Auditor")
+  auditeeRecords          AuditRecord[] @relation("Auditee")
+  kpiResults              KpiResult[]
+  emergencyDrills         EmergencyDrill[]
+  supplierEvaluations     SupplierEvaluation[]
+  uploadedAttachments     Attachment[]
+  receivedReminders       Reminder[]
+  auditLogs               AuditLog[]
+
+  @@map("users")
+}
+
+model Process {
+  id            Int      @id @default(autoincrement())
+  code          String   @unique @db.VarChar(50)
+  name          String   @db.VarChar(200)
+  category      String?  @db.VarChar(50) // 품질, 생산, 구매, 개발 등
+  documentNo    String?  @map("document_no") @db.VarChar(50)
+  revision      String?  @db.VarChar(10)
+  effectiveDate DateTime? @map("effective_date") @db.Date
+  ownerDeptId   Int?     @map("owner_dept_id")
+  ownerDept     Department? @relation(fields: [ownerDeptId], references: [id])
+  description   String?  @db.Text
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  controlItems  ControlItem[]
+  kpiDefinitions KpiDefinition[]
+  auditRecords  AuditRecord[]
+
+  @@map("processes")
+}
+
+model ControlItem {
+  id                  Int      @id @default(autoincrement())
+  itemNo              Int      @map("item_no")
+  processId           Int?     @map("process_id")
+  process             Process? @relation(fields: [processId], references: [id])
+  name                String   @db.VarChar(200)
+  description         String?  @db.Text
+  frequency           String?  @db.VarChar(20) // 일, 주, 월, 분기, 반기, 년, 발생시
+  frequencyDays       Int?     @map("frequency_days")
+  targetDeptId        Int?     @map("target_dept_id")
+  targetDept          Department? @relation("TargetDepartment", fields: [targetDeptId], references: [id])
+  responsibleDeptId   Int?     @map("responsible_dept_id")
+  responsibleDept     Department? @relation("ResponsibleDepartment", fields: [responsibleDeptId], references: [id])
+  responsibleUserId   Int?     @map("responsible_user_id")
+  responsibleUser     User?    @relation(fields: [responsibleUserId], references: [id])
+  formType            String?  @map("form_type") @db.VarChar(50)
+  requiresAttachment  Boolean  @default(false) @map("requires_attachment")
+  isActive            Boolean  @default(true) @map("is_active")
+  notes               String?  @db.Text
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  inspectionRecords   InspectionRecord[]
+
+  @@map("control_items")
+}
+
+model VehicleModel {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique @db.VarChar(20)
+  name      String   @db.VarChar(100)
+  customer  String?  @db.VarChar(50) // 현대, 기아 등
+  startDate DateTime? @map("start_date") @db.Date
+  endDate   DateTime? @map("end_date") @db.Date
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  parts     Part[]
+
+  @@map("vehicle_models")
+}
+
+model Part {
+  id             Int      @id @default(autoincrement())
+  partNo         String   @unique @map("part_no") @db.VarChar(50)
+  name           String   @db.VarChar(200)
+  vehicleModelId Int?     @map("vehicle_model_id")
+  vehicleModel   VehicleModel? @relation(fields: [vehicleModelId], references: [id])
+  category       String?  @db.VarChar(50) // 사출, 도장, 조립 등
+  material       String?  @db.VarChar(100)
+  color          String?  @db.VarChar(50)
+  supplierId     Int?     @map("supplier_id")
+  supplier       Supplier? @relation(fields: [supplierId], references: [id])
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  molds                Part_Molds[]
+  jigs                 Jig[]
+  productionInspections ProductionInspection[]
+  incomingInspections  IncomingInspection[]
+  shippingInspections  ShippingInspection[]
+  reliabilityTests     ReliabilityTest[]
+  adhesionTests        AdhesionTest[]
+  colorMeasurements    ColorMeasurement[]
+  coatingThickness     CoatingThickness[]
+  gageRnrStudies       GageRnrStudy[]
+  processCapabilities  ProcessCapability[]
+  nonconformances      Nonconformance[]
+
+  @@map("parts")
+}
+
+model Supplier {
+  id           Int      @id @default(autoincrement())
+  code         String   @unique @db.VarChar(20)
+  name         String   @db.VarChar(200)
+  type         String?  @db.VarChar(20) // 1차, 2차, 외주
+  businessNo   String?  @map("business_no") @db.VarChar(20)
+  address      String?  @db.Text
+  contactName  String?  @map("contact_name") @db.VarChar(50)
+  contactPhone String?  @map("contact_phone") @db.VarChar(20)
+  contactEmail String?  @map("contact_email") @db.VarChar(100)
+  grade        String?  @db.VarChar(10) // A, B, C, D
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  parts                Part[]
+  incomingInspections  IncomingInspection[]
+  evaluations          SupplierEvaluation[]
+  deliveryPerformance  SupplierDeliveryPerformance[]
+  qualityPerformance   SupplierQualityPerformance[]
+
+  @@map("suppliers")
+}
+
+model Equipment {
+  id           Int      @id @default(autoincrement())
+  assetNo      String   @unique @map("asset_no") @db.VarChar(50)
+  name         String   @db.VarChar(200)
+  category     String?  @db.VarChar(50) // 사출기, 도장설비, 조립설비 등
+  location     String?  @db.VarChar(100)
+  manufacturer String?  @db.VarChar(100)
+  model        String?  @db.VarChar(100)
+  installDate  DateTime? @map("install_date") @db.Date
+  departmentId Int?     @map("department_id")
+  department   Department? @relation(fields: [departmentId], references: [id])
+  status       String   @default("active") @db.VarChar(20) // active, maintenance, inactive
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  dailyChecks      EquipmentDailyCheck[]
+  maintenanceRecords MaintenanceRecord[]
+
+  @@map("equipment")
+}
+
+model Mold {
+  id                  Int      @id @default(autoincrement())
+  moldNo              String   @unique @map("mold_no") @db.VarChar(50)
+  name                String   @db.VarChar(200)
+  cavityCount         Int?     @map("cavity_count")
+  storageLocation     String?  @map("storage_location") @db.VarChar(100)
+  owner               String?  @db.VarChar(50) // 자사, 고객사
+  status              String   @default("active") @db.VarChar(20)
+  lastMaintenanceDate DateTime? @map("last_maintenance_date") @db.Date
+  shotCount           Int      @default(0) @map("shot_count")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  parts       Part_Molds[]
+  moldRecords MoldRecord[]
+
+  @@map("molds")
+}
+
+model Part_Molds {
+  partId  Int  @map("part_id")
+  part    Part @relation(fields: [partId], references: [id])
+  moldId  Int  @map("mold_id")
+  mold    Mold @relation(fields: [moldId], references: [id])
+
+  @@id([partId, moldId])
+  @@map("part_molds")
+}
+
+model Jig {
+  id        Int      @id @default(autoincrement())
+  jigNo     String   @unique @map("jig_no") @db.VarChar(50)
+  name      String   @db.VarChar(200)
+  type      String?  @db.VarChar(50) // 도장지그, 조립지그, 검사지그
+  process   String?  @db.VarChar(50)
+  partId    Int?     @map("part_id")
+  part      Part?    @relation(fields: [partId], references: [id])
+  status    String   @default("active") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  jigRecords JigRecord[]
+
+  @@map("jigs")
+}
+
+model MeasuringInstrument {
+  id                  Int      @id @default(autoincrement())
+  instrumentNo        String   @unique @map("instrument_no") @db.VarChar(50)
+  name                String   @db.VarChar(100)
+  type                String?  @db.VarChar(50) // 버니어, 갭자, 다이얼, 푸쉬풀 등
+  range               String?  @db.VarChar(50)
+  resolution          String?  @db.VarChar(20)
+  departmentId        Int?     @map("department_id")
+  department          Department? @relation(fields: [departmentId], references: [id])
+  location            String?  @db.VarChar(100)
+  calibrationCycle    Int?     @map("calibration_cycle") // 교정주기(월)
+  lastCalibrationDate DateTime? @map("last_calibration_date") @db.Date
+  nextCalibrationDate DateTime? @map("next_calibration_date") @db.Date
+  status              String   @default("active") @db.VarChar(20)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  calibrationRecords CalibrationRecord[]
+  gageRnrStudies     GageRnrStudy[]
+
+  @@map("measuring_instruments")
+}
+
+// ============================================
+// 2. 일상 점검/기록 데이터
+// ============================================
+
+model InspectionRecord {
+  id              Int      @id @default(autoincrement())
+  controlItemId   Int?     @map("control_item_id")
+  controlItem     ControlItem? @relation(fields: [controlItemId], references: [id])
+  inspectionType  String?  @map("inspection_type") @db.VarChar(50) // 일상, 정기, 특별
+  inspectionDate  DateTime @map("inspection_date") @db.Date
+  shift           String?  @db.VarChar(10) // A조, B조, C조
+  targetType      String?  @map("target_type") @db.VarChar(50) // equipment, mold, jig, part 등
+  targetId        Int?     @map("target_id")
+  inspectorId     Int?     @map("inspector_id")
+  inspector       User?    @relation("Inspector", fields: [inspectorId], references: [id])
+  result          String?  @db.VarChar(20) // 합격, 불합격, 조건부
+  score           Decimal? @db.Decimal(5, 2)
+  findings        String?  @db.Text
+  attachments     Json?
+  verifiedBy      Int?     @map("verified_by")
+  verifier        User?    @relation("Verifier", fields: [verifiedBy], references: [id])
+  verifiedAt      DateTime? @map("verified_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  details InspectionDetail[]
+
+  @@map("inspection_records")
+}
+
+model InspectionDetail {
+  id            Int      @id @default(autoincrement())
+  inspectionId  Int      @map("inspection_id")
+  inspection    InspectionRecord @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  checkItem     String   @map("check_item") @db.VarChar(200)
+  standard      String?  @db.VarChar(200)
+  method        String?  @db.VarChar(100)
+  measuredValue String?  @map("measured_value") @db.VarChar(100)
+  result        String?  @db.VarChar(20) // OK, NG, NA
+  remarks       String?  @db.Text
+  seqNo         Int?     @map("seq_no")
+
+  @@map("inspection_details")
+}
+
+model EquipmentDailyCheck {
+  id                Int      @id @default(autoincrement())
+  equipmentId       Int      @map("equipment_id")
+  equipment         Equipment @relation(fields: [equipmentId], references: [id])
+  checkDate         DateTime @map("check_date") @db.Date
+  shift             String?  @db.VarChar(10)
+  checkerId         Int?     @map("checker_id")
+  checker           User?    @relation(fields: [checkerId], references: [id])
+  appearance        String?  @db.VarChar(10) // OK, NG
+  abnormalSound     String?  @map("abnormal_sound") @db.VarChar(10)
+  abnormalVibration String?  @map("abnormal_vibration") @db.VarChar(10)
+  oilLevel          String?  @map("oil_level") @db.VarChar(10)
+  airPressure       String?  @map("air_pressure") @db.VarChar(10)
+  temperature       Decimal? @db.Decimal(5, 1)
+  overallStatus     String?  @map("overall_status") @db.VarChar(20) // 정상, 이상, 수리필요
+  remarks           String?  @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@unique([equipmentId, checkDate, shift])
+  @@map("equipment_daily_checks")
+}
+
+model MaintenanceRecord {
+  id                  Int      @id @default(autoincrement())
+  equipmentId         Int?     @map("equipment_id")
+  equipment           Equipment? @relation(fields: [equipmentId], references: [id])
+  maintenanceType     String?  @map("maintenance_type") @db.VarChar(20) // 예방, 사후, 개량
+  planDate            DateTime? @map("plan_date") @db.Date
+  actualDate          DateTime? @map("actual_date") @db.Date
+  workDescription     String?  @map("work_description") @db.Text
+  partsReplaced       Json?    @map("parts_replaced")
+  downtimeHours       Decimal? @map("downtime_hours") @db.Decimal(5, 1)
+  cost                Decimal? @db.Decimal(12, 2)
+  performedById       Int?     @map("performed_by")
+  performedBy         User?    @relation("PerformedBy", fields: [performedById], references: [id])
+  verifiedById        Int?     @map("verified_by")
+  verifiedBy          User?    @relation("VerifiedBy", fields: [verifiedById], references: [id])
+  nextMaintenanceDate DateTime? @map("next_maintenance_date") @db.Date
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("maintenance_records")
+}
+
+model MoldRecord {
+  id               Int      @id @default(autoincrement())
+  moldId           Int      @map("mold_id")
+  mold             Mold     @relation(fields: [moldId], references: [id])
+  recordType       String   @map("record_type") @db.VarChar(20) // 일상점검, 습합, 세척, 보수
+  recordDate       DateTime @map("record_date") @db.Date
+  partingLine      String?  @map("parting_line") @db.VarChar(10)
+  ejectorPin       String?  @map("ejector_pin") @db.VarChar(10)
+  coolingChannel   String?  @map("cooling_channel") @db.VarChar(10)
+  guidePin         String?  @map("guide_pin") @db.VarChar(10)
+  issueDescription String?  @map("issue_description") @db.Text
+  repairAction     String?  @map("repair_action") @db.Text
+  partsReplaced    String?  @map("parts_replaced") @db.Text
+  shotCountAtCheck Int?     @map("shot_count_at_check")
+  performerId      Int?     @map("performer_id")
+  performer        User?    @relation(fields: [performerId], references: [id])
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("mold_records")
+}
+
+model JigRecord {
+  id             Int      @id @default(autoincrement())
+  jigId          Int      @map("jig_id")
+  jig            Jig      @relation(fields: [jigId], references: [id])
+  recordType     String   @map("record_type") @db.VarChar(20) // 일상점검, 정도검증, 박리(도장)
+  recordDate     DateTime @map("record_date") @db.Date
+  status         String?  @db.VarChar(20) // 정상, 이상, 수리필요
+  measuredValues Json?    @map("measured_values")
+  remarks        String?  @db.Text
+  performerId    Int?     @map("performer_id")
+  performer      User?    @relation(fields: [performerId], references: [id])
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("jig_records")
+}
+
+model CalibrationRecord {
+  id                  Int      @id @default(autoincrement())
+  instrumentId        Int      @map("instrument_id")
+  instrument          MeasuringInstrument @relation(fields: [instrumentId], references: [id])
+  calibrationDate     DateTime @map("calibration_date") @db.Date
+  calibrationType     String?  @map("calibration_type") @db.VarChar(20) // 사내, 외부
+  calibrator          String?  @db.VarChar(100) // 교정기관/담당자
+  standardUsed        String?  @map("standard_used") @db.VarChar(200)
+  result              String?  @db.VarChar(20) // 합격, 불합격, 조건부
+  beforeValues        Json?    @map("before_values")
+  afterValues         Json?    @map("after_values")
+  uncertainty         Decimal? @db.Decimal(10, 6)
+  certificateNo       String?  @map("certificate_no") @db.VarChar(50)
+  certificateFile     String?  @map("certificate_file") @db.VarChar(255)
+  nextCalibrationDate DateTime? @map("next_calibration_date") @db.Date
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("calibration_records")
+}
+
+// ============================================
+// 3. 검사 데이터
+// ============================================
+
+model ProductionInspection {
+  id              Int      @id @default(autoincrement())
+  partId          Int      @map("part_id")
+  part            Part     @relation(fields: [partId], references: [id])
+  productionDate  DateTime @map("production_date") @db.Date
+  shift           String?  @db.VarChar(10)
+  lotNo           String?  @map("lot_no") @db.VarChar(50)
+  inspectionType  String?  @map("inspection_type") @db.VarChar(10) // 초물, 중물, 종물
+  inspectionTime  DateTime? @map("inspection_time") @db.Time()
+  inspectorId     Int?     @map("inspector_id")
+  inspector       User?    @relation(fields: [inspectorId], references: [id])
+  visualCheck     String?  @map("visual_check") @db.VarChar(10)
+  dimensionCheck  String?  @map("dimension_check") @db.VarChar(10)
+  functionCheck   String?  @map("function_check") @db.VarChar(10)
+  measuredValues  Json?    @map("measured_values")
+  result          String?  @db.VarChar(20) // 합격, 불합격
+  remarks         String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("production_inspections")
+}
+
+model IncomingInspection {
+  id              Int      @id @default(autoincrement())
+  supplierId      Int?     @map("supplier_id")
+  supplier        Supplier? @relation(fields: [supplierId], references: [id])
+  partId          Int?     @map("part_id")
+  part            Part?    @relation(fields: [partId], references: [id])
+  receivingDate   DateTime @map("receiving_date") @db.Date
+  lotNo           String?  @map("lot_no") @db.VarChar(50)
+  quantity        Int?
+  inspectionType  String?  @map("inspection_type") @db.VarChar(20) // 전수, 샘플링, 무검사
+  sampleSize      Int?     @map("sample_size")
+  inspectorId     Int?     @map("inspector_id")
+  inspector       User?    @relation(fields: [inspectorId], references: [id])
+  visualResult    String?  @map("visual_result") @db.VarChar(10)
+  dimensionResult String?  @map("dimension_result") @db.VarChar(10)
+  materialResult  String?  @map("material_result") @db.VarChar(10) // Mill Sheet 확인
+  defectQty       Int      @default(0) @map("defect_qty")
+  defectRate      Decimal? @map("defect_rate") @db.Decimal(5, 2)
+  overallResult   String?  @map("overall_result") @db.VarChar(20)
+  disposition     String?  @db.VarChar(20) // 합격입고, 반품, 특채
+  supplierCertNo  String?  @map("supplier_cert_no") @db.VarChar(50)
+  remarks         String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("incoming_inspections")
+}
+
+model ShippingInspection {
+  id              Int      @id @default(autoincrement())
+  partId          Int      @map("part_id")
+  part            Part     @relation(fields: [partId], references: [id])
+  shippingDate    DateTime @map("shipping_date") @db.Date
+  lotNo           String?  @map("lot_no") @db.VarChar(50)
+  quantity        Int?
+  destination     String?  @db.VarChar(100)
+  inspectorId     Int?     @map("inspector_id")
+  inspector       User?    @relation(fields: [inspectorId], references: [id])
+  visualCheck     String?  @map("visual_check") @db.VarChar(10)
+  dimensionCheck  String?  @map("dimension_check") @db.VarChar(10)
+  packagingCheck  String?  @map("packaging_check") @db.VarChar(10)
+  labelCheck      String?  @map("label_check") @db.VarChar(10)
+  result          String?  @db.VarChar(20)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("shipping_inspections")
+}
+
+// ============================================
+// 4. 품질 시험/평가 데이터
+// ============================================
+
+model ReliabilityTest {
+  id             Int      @id @default(autoincrement())
+  partId         Int      @map("part_id")
+  part           Part     @relation(fields: [partId], references: [id])
+  testType       String?  @map("test_type") @db.VarChar(50) // 내후성, 내열성, 내약품성, 부착성 등
+  testDate       DateTime @map("test_date") @db.Date
+  testStandard   String?  @map("test_standard") @db.VarChar(100)
+  testConditions Json?    @map("test_conditions")
+  sampleQty      Int?     @map("sample_qty")
+  testDuration   String?  @map("test_duration") @db.VarChar(50)
+  result         String?  @db.VarChar(20)
+  measuredValues Json?    @map("measured_values")
+  testerId       Int?     @map("tester_id")
+  tester         User?    @relation(fields: [testerId], references: [id])
+  reportNo       String?  @map("report_no") @db.VarChar(50)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("reliability_tests")
+}
+
+model AdhesionTest {
+  id              Int      @id @default(autoincrement())
+  partId          Int      @map("part_id")
+  part            Part     @relation(fields: [partId], references: [id])
+  testDate        DateTime @map("test_date") @db.Date
+  color           String?  @db.VarChar(50)
+  position1Grade  String?  @map("position1_grade") @db.VarChar(10)
+  position1Result String?  @map("position1_result") @db.VarChar(10)
+  position2Grade  String?  @map("position2_grade") @db.VarChar(10)
+  position2Result String?  @map("position2_result") @db.VarChar(10)
+  overallResult   String?  @map("overall_result") @db.VarChar(20)
+  testerId        Int?     @map("tester_id")
+  tester          User?    @relation(fields: [testerId], references: [id])
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("adhesion_tests")
+}
+
+model ColorMeasurement {
+  id              Int      @id @default(autoincrement())
+  partId          Int      @map("part_id")
+  part            Part     @relation(fields: [partId], references: [id])
+  measurementDate DateTime @map("measurement_date") @db.Date
+  lotNo           String?  @map("lot_no") @db.VarChar(50)
+  color           String?  @db.VarChar(50)
+  deltaL          Decimal? @map("delta_l") @db.Decimal(6, 3)
+  deltaA          Decimal? @map("delta_a") @db.Decimal(6, 3)
+  deltaB          Decimal? @map("delta_b") @db.Decimal(6, 3)
+  deltaE          Decimal? @map("delta_e") @db.Decimal(6, 3)
+  standardPlateNo String?  @map("standard_plate_no") @db.VarChar(50)
+  result          String?  @db.VarChar(20) // 합격, 불합격
+  measurerId      Int?     @map("measurer_id")
+  measurer        User?    @relation(fields: [measurerId], references: [id])
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("color_measurements")
+}
+
+model CoatingThickness {
+  id               Int      @id @default(autoincrement())
+  partId           Int      @map("part_id")
+  part             Part     @relation(fields: [partId], references: [id])
+  measurementDate  DateTime @map("measurement_date") @db.Date
+  color            String?  @db.VarChar(50)
+  position1        Decimal? @db.Decimal(6, 1)
+  position2        Decimal? @db.Decimal(6, 1)
+  position3        Decimal? @db.Decimal(6, 1)
+  position4        Decimal? @db.Decimal(6, 1)
+  position5        Decimal? @db.Decimal(6, 1)
+  averageThickness Decimal? @map("average_thickness") @db.Decimal(6, 1)
+  specMin          Decimal? @map("spec_min") @db.Decimal(6, 1)
+  specMax          Decimal? @map("spec_max") @db.Decimal(6, 1)
+  result           String?  @db.VarChar(20)
+  measurerId       Int?     @map("measurer_id")
+  measurer         User?    @relation(fields: [measurerId], references: [id])
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("coating_thickness")
+}
+
+model GageRnrStudy {
+  id              Int      @id @default(autoincrement())
+  instrumentId    Int?     @map("instrument_id")
+  instrument      MeasuringInstrument? @relation(fields: [instrumentId], references: [id])
+  studyDate       DateTime @map("study_date") @db.Date
+  studyType       String?  @map("study_type") @db.VarChar(20) // 계량형, 계수형
+  partId          Int?     @map("part_id")
+  part            Part?    @relation(fields: [partId], references: [id])
+  characteristic  String?  @db.VarChar(100) // 측정 특성
+  specification   Decimal? @db.Decimal(10, 4)
+  tolerance       Decimal? @db.Decimal(10, 4)
+  appraiserCount  Int?     @map("appraiser_count")
+  trialCount      Int?     @map("trial_count")
+  partCount       Int?     @map("part_count")
+  repeatability   Decimal? @db.Decimal(6, 2)
+  reproducibility Decimal? @db.Decimal(6, 2)
+  gageRnr         Decimal? @map("gage_rnr") @db.Decimal(6, 2)
+  partVariation   Decimal? @map("part_variation") @db.Decimal(6, 2)
+  ndc             Int? // Number of Distinct Categories
+  result          String?  @db.VarChar(20) // 합격, 불합격, 조건부
+  rawData         Json?    @map("raw_data")
+  analystId       Int?     @map("analyst_id")
+  analyst         User?    @relation(fields: [analystId], references: [id])
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("gage_rnr_studies")
+}
+
+model ProcessCapability {
+  id             Int      @id @default(autoincrement())
+  partId         Int?     @map("part_id")
+  part           Part?    @relation(fields: [partId], references: [id])
+  process        String?  @db.VarChar(100)
+  characteristic String?  @db.VarChar(100)
+  analysisDate   DateTime @map("analysis_date") @db.Date
+  sampleSize     Int?     @map("sample_size")
+  usl            Decimal? @db.Decimal(10, 4)
+  lsl            Decimal? @db.Decimal(10, 4)
+  target         Decimal? @db.Decimal(10, 4)
+  mean           Decimal? @db.Decimal(10, 4)
+  stdDev         Decimal? @map("std_dev") @db.Decimal(10, 6)
+  cp             Decimal? @db.Decimal(6, 3)
+  cpk            Decimal? @db.Decimal(6, 3)
+  pp             Decimal? @db.Decimal(6, 3)
+  ppk            Decimal? @db.Decimal(6, 3)
+  result         String?  @db.VarChar(20)
+  rawData        Json?    @map("raw_data")
+  analystId      Int?     @map("analyst_id")
+  analyst        User?    @relation(fields: [analystId], references: [id])
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("process_capabilities")
+}
+
+// ============================================
+// 5. 교육/자격 데이터
+// ============================================
+
+model TrainingPlan {
+  id            Int      @id @default(autoincrement())
+  year          Int
+  trainingName  String   @map("training_name") @db.VarChar(200)
+  category      String?  @db.VarChar(50) // 품질, 안전, 직무, 법정 등
+  targetDeptId  Int?     @map("target_dept_id")
+  planDate      DateTime? @map("plan_date") @db.Date
+  actualDate    DateTime? @map("actual_date") @db.Date
+  durationHours Decimal? @map("duration_hours") @db.Decimal(4, 1)
+  instructor    String?  @db.VarChar(100)
+  location      String?  @db.VarChar(100)
+  status        String?  @db.VarChar(20) // 계획, 진행중, 완료, 취소
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  records TrainingRecord[]
+
+  @@map("training_plans")
+}
+
+model TrainingRecord {
+  id               Int      @id @default(autoincrement())
+  trainingPlanId   Int?     @map("training_plan_id")
+  trainingPlan     TrainingPlan? @relation(fields: [trainingPlanId], references: [id])
+  userId           Int      @map("user_id")
+  user             User     @relation(fields: [userId], references: [id])
+  attendance       String?  @db.VarChar(10) // 참석, 불참, 지각
+  completionStatus String?  @map("completion_status") @db.VarChar(20) // 수료, 미수료
+  score            Decimal? @db.Decimal(5, 2)
+  certificateNo    String?  @map("certificate_no") @db.VarChar(50)
+  certificateFile  String?  @map("certificate_file") @db.VarChar(255)
+  remarks          String?  @db.Text
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("training_records")
+}
+
+model QualificationStandard {
+  id                       Int      @id @default(autoincrement())
+  jobType                  String   @map("job_type") @db.VarChar(50) // 수입검사, 출하검사, 내부심사원 등
+  requiredExperienceMonths Int?     @map("required_experience_months")
+  evaluationCriteria       Json?    @map("evaluation_criteria") // 평가항목 및 배점
+  passingScore             Decimal? @map("passing_score") @db.Decimal(5, 2)
+  validityMonths           Int?     @map("validity_months") // 유효기간(월)
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  assessments QualificationAssessment[]
+
+  @@map("qualification_standards")
+}
+
+model QualificationAssessment {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @map("user_id")
+  user           User     @relation("Assessed", fields: [userId], references: [id])
+  standardId     Int?     @map("standard_id")
+  standard       QualificationStandard? @relation(fields: [standardId], references: [id])
+  assessmentDate DateTime @map("assessment_date") @db.Date
+  evaluator1Id   Int?     @map("evaluator1_id")
+  evaluator1     User?    @relation("Evaluator1", fields: [evaluator1Id], references: [id])
+  evaluator2Id   Int?     @map("evaluator2_id")
+  evaluator2     User?    @relation("Evaluator2", fields: [evaluator2Id], references: [id])
+  evaluator3Id   Int?     @map("evaluator3_id")
+  evaluator3     User?    @relation("Evaluator3", fields: [evaluator3Id], references: [id])
+  scores         Json? // 항목별 점수
+  totalScore     Decimal? @map("total_score") @db.Decimal(5, 2)
+  result         String?  @db.VarChar(20) // 합격, 불합격
+  validUntil     DateTime? @map("valid_until") @db.Date
+  certificateNo  String?  @map("certificate_no") @db.VarChar(50)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("qualification_assessments")
+}
+
+// ============================================
+// 6. 부적합/시정조치 데이터
+// ============================================
+
+model Nonconformance {
+  id                 Int      @id @default(autoincrement())
+  ncNo               String   @unique @map("nc_no") @db.VarChar(20)
+  source             String?  @db.VarChar(20) // 내부, 고객, 공급자
+  detectionPoint     String?  @map("detection_point") @db.VarChar(50) // 수입, 공정, 출하, 필드
+  occurrenceDate     DateTime @map("occurrence_date") @db.Date
+  detectionDate      DateTime? @map("detection_date") @db.Date
+  partId             Int?     @map("part_id")
+  part               Part?    @relation(fields: [partId], references: [id])
+  lotNo              String?  @map("lot_no") @db.VarChar(50)
+  defectQty          Int?     @map("defect_qty")
+  defectType         String?  @map("defect_type") @db.VarChar(50)
+  defectDescription  String?  @map("defect_description") @db.Text
+  immediateAction    String?  @map("immediate_action") @db.Text
+  containmentAction  String?  @map("containment_action") @db.Text
+  disposition        String?  @db.VarChar(20) // 폐기, 수리, 특채, 반품
+  dispositionQty     Int?     @map("disposition_qty")
+  reporterId         Int?     @map("reporter_id")
+  reporter           User?    @relation(fields: [reporterId], references: [id])
+  responsibleDeptId  Int?     @map("responsible_dept_id")
+  status             String?  @db.VarChar(20) // 발생, 분석중, 조치중, 완료
+  attachments        Json?
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  correctiveActions CorrectiveAction[]
+
+  @@map("nonconformances")
+}
+
+model CorrectiveAction {
+  id                    Int      @id @default(autoincrement())
+  carNo                 String   @unique @map("car_no") @db.VarChar(20)
+  nonconformanceId      Int?     @map("nonconformance_id")
+  nonconformance        Nonconformance? @relation(fields: [nonconformanceId], references: [id])
+  teamLeaderId          Int?     @map("team_leader_id")
+  teamLeader            User?    @relation("TeamLeader", fields: [teamLeaderId], references: [id])
+  teamMembers           Json?    @map("team_members")
+  problemDescription    String?  @map("problem_description") @db.Text
+  interimAction         String?  @map("interim_action") @db.Text
+  interimActionDate     DateTime? @map("interim_action_date") @db.Date
+  rootCauseAnalysis     String?  @map("root_cause_analysis") @db.Text
+  rootCauses            Json?    @map("root_causes")
+  correctiveActions     Json?    @map("corrective_actions")
+  implementationDate    DateTime? @map("implementation_date") @db.Date
+  implementationDetails String?  @map("implementation_details") @db.Text
+  preventiveActions     Json?    @map("preventive_actions")
+  horizontalDeployment  String?  @map("horizontal_deployment") @db.Text
+  verificationDate      DateTime? @map("verification_date") @db.Date
+  verificationResult    String?  @map("verification_result") @db.Text
+  verifiedById          Int?     @map("verified_by")
+  verifiedBy            User?    @relation("VerifiedBy", fields: [verifiedById], references: [id])
+  targetDate            DateTime? @map("target_date") @db.Date
+  completionDate        DateTime? @map("completion_date") @db.Date
+  status                String?  @db.VarChar(20) // 진행중, 완료, 지연
+  effectivenessCheckDate DateTime? @map("effectiveness_check_date") @db.Date
+  effectivenessResult   String?  @map("effectiveness_result") @db.VarChar(20)
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  auditFindings AuditFinding[]
+
+  @@map("corrective_actions")
+}
+
+// ============================================
+// 7. 내부심사 데이터
+// ============================================
+
+model AuditPlan {
+  id             Int      @id @default(autoincrement())
+  year           Int
+  auditType      String?  @map("audit_type") @db.VarChar(20) // 시스템, 공정, 제품
+  planDate       DateTime? @map("plan_date") @db.Date
+  leadAuditorId  Int?     @map("lead_auditor_id")
+  leadAuditor    User?    @relation(fields: [leadAuditorId], references: [id])
+  auditors       Json?
+  targetDepartments Json? @map("target_departments")
+  auditScope     String?  @map("audit_scope") @db.Text
+  status         String?  @db.VarChar(20)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  records AuditRecord[]
+
+  @@map("audit_plans")
+}
+
+model AuditRecord {
+  id            Int      @id @default(autoincrement())
+  planId        Int?     @map("plan_id")
+  plan          AuditPlan? @relation(fields: [planId], references: [id])
+  auditDate     DateTime @map("audit_date") @db.Date
+  departmentId  Int?     @map("department_id")
+  department    Department? @relation(fields: [departmentId], references: [id])
+  processId     Int?     @map("process_id")
+  process       Process? @relation(fields: [processId], references: [id])
+  checklistUsed String?  @map("checklist_used") @db.VarChar(100)
+  findingsCount Int      @default(0) @map("findings_count")
+  ncMajor       Int      @default(0) @map("nc_major")
+  ncMinor       Int      @default(0) @map("nc_minor")
+  observations  Int      @default(0)
+  overallResult String?  @map("overall_result") @db.VarChar(20)
+  auditorId     Int?     @map("auditor_id")
+  auditor       User?    @relation("Auditor", fields: [auditorId], references: [id])
+  auditeeId     Int?     @map("auditee_id")
+  auditee       User?    @relation("Auditee", fields: [auditeeId], references: [id])
+  summary       String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  findings AuditFinding[]
+
+  @@map("audit_records")
+}
+
+model AuditFinding {
+  id                  Int      @id @default(autoincrement())
+  auditId             Int      @map("audit_id")
+  audit               AuditRecord @relation(fields: [auditId], references: [id])
+  findingNo           Int?     @map("finding_no")
+  findingType         String?  @map("finding_type") @db.VarChar(20) // 중부적합, 경부적합, 관찰사항
+  clauseReference     String?  @map("clause_reference") @db.VarChar(50) // IATF 조항
+  requirement         String?  @db.Text
+  evidence            String?  @db.Text
+  correctiveActionId  Int?     @map("corrective_action_id")
+  correctiveAction    CorrectiveAction? @relation(fields: [correctiveActionId], references: [id])
+  status              String?  @db.VarChar(20)
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("audit_findings")
+}
+
+// ============================================
+// 8. KPI/성과지표 데이터
+// ============================================
+
+model KpiDefinition {
+  id                Int      @id @default(autoincrement())
+  processId         Int?     @map("process_id")
+  process           Process? @relation(fields: [processId], references: [id])
+  kpiName           String   @map("kpi_name") @db.VarChar(200)
+  calculationMethod String?  @map("calculation_method") @db.Text
+  unit              String?  @db.VarChar(20)
+  targetValue       Decimal? @map("target_value") @db.Decimal(10, 2)
+  targetDirection   String?  @map("target_direction") @db.VarChar(10) // 상향, 하향, 범위
+  frequency         String?  @db.VarChar(20) // 일, 주, 월, 분기
+  responsibleDeptId Int?     @map("responsible_dept_id")
+  responsibleDept   Department? @relation(fields: [responsibleDeptId], references: [id])
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  results KpiResult[]
+
+  @@map("kpi_definitions")
+}
+
+model KpiResult {
+  id              Int      @id @default(autoincrement())
+  kpiId           Int      @map("kpi_id")
+  kpi             KpiDefinition @relation(fields: [kpiId], references: [id])
+  periodYear      Int      @map("period_year")
+  periodMonth     Int?     @map("period_month")
+  periodWeek      Int?     @map("period_week")
+  targetValue     Decimal? @map("target_value") @db.Decimal(10, 2)
+  actualValue     Decimal? @map("actual_value") @db.Decimal(10, 2)
+  achievementRate Decimal? @map("achievement_rate") @db.Decimal(6, 2)
+  status          String?  @db.VarChar(20) // 달성, 미달성
+  remarks         String?  @db.Text
+  actionRequired  String?  @map("action_required") @db.Text // 미달성시 대책
+  recordedById    Int?     @map("recorded_by")
+  recordedBy      User?    @relation(fields: [recordedById], references: [id])
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("kpi_results")
+}
+
+// ============================================
+// 9. 비상사태 관리 데이터
+// ============================================
+
+model EmergencyType {
+  id                Int      @id @default(autoincrement())
+  code              String   @unique @db.VarChar(20)
+  name              String   @db.VarChar(100)
+  description       String?  @db.Text
+  responseProcedure String?  @map("response_procedure") @db.Text
+  responsibleDeptId Int?     @map("responsible_dept_id")
+  responsibleDept   Department? @relation(fields: [responsibleDeptId], references: [id])
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  drills EmergencyDrill[]
+
+  @@map("emergency_types")
+}
+
+model EmergencyDrill {
+  id              Int      @id @default(autoincrement())
+  emergencyTypeId Int      @map("emergency_type_id")
+  emergencyType   EmergencyType @relation(fields: [emergencyTypeId], references: [id])
+  planDate        DateTime? @map("plan_date") @db.Date
+  actualDate      DateTime? @map("actual_date") @db.Date
+  scenario        String?  @db.Text
+  participants    Json?
+  responseTime    Int?     @map("response_time") // 분
+  effectiveness   String?  @db.VarChar(20) // 효과적, 보통, 미흡
+  findings        String?  @db.Text
+  improvements    String?  @db.Text
+  conductedById   Int?     @map("conducted_by")
+  conductedBy     User?    @relation(fields: [conductedById], references: [id])
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("emergency_drills")
+}
+
+// ============================================
+// 10. 공급자 관리 데이터
+// ============================================
+
+model SupplierEvaluation {
+  id               Int      @id @default(autoincrement())
+  supplierId       Int      @map("supplier_id")
+  supplier         Supplier @relation(fields: [supplierId], references: [id])
+  evaluationYear   Int      @map("evaluation_year")
+  evaluationType   String?  @map("evaluation_type") @db.VarChar(20) // 정기, 수시, 신규
+  evaluationDate   DateTime? @map("evaluation_date") @db.Date
+  qualityScore     Decimal? @map("quality_score") @db.Decimal(5, 2)
+  deliveryScore    Decimal? @map("delivery_score") @db.Decimal(5, 2)
+  costScore        Decimal? @map("cost_score") @db.Decimal(5, 2)
+  serviceScore     Decimal? @map("service_score") @db.Decimal(5, 2)
+  totalScore       Decimal? @map("total_score") @db.Decimal(5, 2)
+  grade            String?  @db.VarChar(10) // A, B, C, D
+  improvementRequired String? @map("improvement_required") @db.Text
+  evaluatorId      Int?     @map("evaluator_id")
+  evaluator        User?    @relation(fields: [evaluatorId], references: [id])
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("supplier_evaluations")
+}
+
+model SupplierDeliveryPerformance {
+  id          Int      @id @default(autoincrement())
+  supplierId  Int      @map("supplier_id")
+  supplier    Supplier @relation(fields: [supplierId], references: [id])
+  yearMonth   String   @map("year_month") @db.VarChar(7) // YYYY-MM
+  orderCount  Int?     @map("order_count")
+  onTimeCount Int?     @map("on_time_count")
+  lateCount   Int?     @map("late_count")
+  onTimeRate  Decimal? @map("on_time_rate") @db.Decimal(5, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([supplierId, yearMonth])
+  @@map("supplier_delivery_performance")
+}
+
+model SupplierQualityPerformance {
+  id          Int      @id @default(autoincrement())
+  supplierId  Int      @map("supplier_id")
+  supplier    Supplier @relation(fields: [supplierId], references: [id])
+  yearMonth   String   @map("year_month") @db.VarChar(7)
+  receivedQty Int?     @map("received_qty")
+  defectQty   Int?     @map("defect_qty")
+  defectRate  Decimal? @map("defect_rate") @db.Decimal(6, 4)
+  ncCount     Int?     @map("nc_count") // 부적합 건수
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([supplierId, yearMonth])
+  @@map("supplier_quality_performance")
+}
+
+// ============================================
+// 11. 첨부파일/시스템 관리
+// ============================================
+
+model Attachment {
+  id         Int      @id @default(autoincrement())
+  entityType String   @map("entity_type") @db.VarChar(50)
+  entityId   Int      @map("entity_id")
+  fileName   String   @map("file_name") @db.VarChar(255)
+  filePath   String   @map("file_path") @db.VarChar(500)
+  fileSize   Int?     @map("file_size")
+  mimeType   String?  @map("mime_type") @db.VarChar(100)
+  uploadedById Int?   @map("uploaded_by")
+  uploadedBy User?    @relation(fields: [uploadedById], references: [id])
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  @@map("attachments")
+}
+
+model Reminder {
+  id           Int      @id @default(autoincrement())
+  reminderType String?  @map("reminder_type") @db.VarChar(50)
+  targetDate   DateTime? @map("target_date") @db.Date
+  entityType   String?  @map("entity_type") @db.VarChar(50)
+  entityId     Int?     @map("entity_id")
+  recipientId  Int?     @map("recipient_id")
+  recipient    User?    @relation(fields: [recipientId], references: [id])
+  message      String?  @db.Text
+  isSent       Boolean  @default(false) @map("is_sent")
+  sentAt       DateTime? @map("sent_at")
+  isRead       Boolean  @default(false) @map("is_read")
+  readAt       DateTime? @map("read_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("reminders")
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int?     @map("user_id")
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String?  @db.VarChar(50) // CREATE, UPDATE, DELETE, LOGIN
+  entityType String?  @map("entity_type") @db.VarChar(50)
+  entityId   Int?     @map("entity_id")
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  ipAddress  String?  @map("ip_address") @db.VarChar(50)
+  userAgent  String?  @map("user_agent") @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
