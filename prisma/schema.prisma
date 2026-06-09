@@ -115,12 +115,12 @@ model Process {
 
 model ControlItem {
   id                  Int      @id @default(autoincrement())
-  itemNo              Int      @map("item_no")
+  itemNo              Int      @unique @map("item_no")
   processId           Int?     @map("process_id")
   process             Process? @relation(fields: [processId], references: [id])
-  name                String   @db.VarChar(200)
+  name                String   @db.VarChar(500)
   description         String?  @db.Text
-  frequency           String?  @db.VarChar(20) // 일, 주, 월, 분기, 반기, 년, 발생시
+  frequency           String?  @db.VarChar(50) // 일, 주, 월, 분기, 반기, 년, 발생시, 년/필요시 등
   frequencyDays       Int?     @map("frequency_days")
   targetDeptId        Int?     @map("target_dept_id")
   targetDept          Department? @relation("TargetDepartment", fields: [targetDeptId], references: [id])
@@ -129,6 +129,7 @@ model ControlItem {
   responsibleUserId   Int?     @map("responsible_user_id")
   responsibleUser     User?    @relation(fields: [responsibleUserId], references: [id])
   formType            String?  @map("form_type") @db.VarChar(50)
+  sampleForm          String?  @map("sample_form") @db.VarChar(500) // 샘플양식 파일명
   requiresAttachment  Boolean  @default(false) @map("requires_attachment")
   isActive            Boolean  @default(true) @map("is_active")
   notes               String?  @db.Text
