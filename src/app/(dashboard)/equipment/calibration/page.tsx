@@ -1,273 +1,1138 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Gauge, Plus, Save, Search } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Gauge,
+  Plus,
+  Save,
+  Search,
+  Calendar,
+  ClipboardList,
+  FileText,
+  Settings,
+} from "lucide-react";
 
-interface CalibrationRecord {
+// Types
+interface Equipment {
   id: number;
-  calibrationDate: string;
-  instrumentNo: string;
-  instrumentName: string;
-  calibrationType: string;
-  calibrator: string;
-  standardUsed: string;
-  beforeValue: string;
-  afterValue: string;
-  result: string;
-  certificateNo: string;
-  nextCalibrationDate: string;
+  managementNo: string; // 관리번호
+  equipmentName: string; // 계측기명
+  model: string; // 모델
+  manufacturer: string; // 제조사
+  purchaseDate: string; // 구입일
+  measurementRange: string; // 계측범위
+  accuracy: string; // 정밀도
+  department: string; // 사용부서
+  storageLocation: string; // 보관위치
+  calibrationCycle: number; // 교정주기 (개월)
+  lastCalibrationDate: string; // 최종교정일
+  nextCalibrationDate: string; // 차기교정예정일
+  calibrationAgency: string; // 교정기관
+  certificateNo: string; // 교정성적서 번호
+  status: "사용중" | "교정중" | "폐기" | "수리중"; // 계측기 상태
 }
 
+interface CalibrationHistory {
+  id: number;
+  equipmentId: number;
+  calibrationDate: string; // 교정일
+  result: "합격" | "불합격" | "조정후합격"; // 교정결과
+  certificateNo: string; // 교정성적서
+  remarks: string; // 비고
+}
+
+// Sample data
+const initialEquipments: Equipment[] = [
+  {
+    id: 1,
+    managementNo: "GA-001",
+    equipmentName: "버니어캘리퍼스",
+    model: "CD-15CPX",
+    manufacturer: "Mitutoyo",
+    purchaseDate: "2022-03-15",
+    measurementRange: "0-150mm",
+    accuracy: "0.02mm",
+    department: "품질관리부",
+    storageLocation: "측정실 A-1",
+    calibrationCycle: 12,
+    lastCalibrationDate: "2026-01-15",
+    nextCalibrationDate: "2027-01-15",
+    calibrationAgency: "사외",
+    certificateNo: "CAL-2026-001",
+    status: "사용중",
+  },
+  {
+    id: 2,
+    managementNo: "GA-002",
+    equipmentName: "마이크로미터",
+    model: "MDC-25MX",
+    manufacturer: "Mitutoyo",
+    purchaseDate: "2021-06-20",
+    measurementRange: "0-25mm",
+    accuracy: "0.001mm",
+    department: "생산기술부",
+    storageLocation: "측정실 A-2",
+    calibrationCycle: 12,
+    lastCalibrationDate: "2026-02-20",
+    nextCalibrationDate: "2027-02-20",
+    calibrationAgency: "사내",
+    certificateNo: "CAL-2026-002",
+    status: "사용중",
+  },
+  {
+    id: 3,
+    managementNo: "GA-003",
+    equipmentName: "다이얼게이지",
+    model: "ID-C112XB",
+    manufacturer: "Mitutoyo",
+    purchaseDate: "2020-11-10",
+    measurementRange: "0-12.7mm",
+    accuracy: "0.01mm",
+    department: "품질관리부",
+    storageLocation: "측정실 B-1",
+    calibrationCycle: 6,
+    lastCalibrationDate: "2026-03-10",
+    nextCalibrationDate: "2026-09-10",
+    calibrationAgency: "사외",
+    certificateNo: "CAL-2026-003",
+    status: "교정중",
+  },
+  {
+    id: 4,
+    managementNo: "GA-004",
+    equipmentName: "3차원측정기",
+    model: "CRYSTA-Apex S544",
+    manufacturer: "Mitutoyo",
+    purchaseDate: "2019-05-01",
+    measurementRange: "500x400x400mm",
+    accuracy: "1.7um",
+    department: "품질관리부",
+    storageLocation: "항온항습실",
+    calibrationCycle: 12,
+    lastCalibrationDate: "2025-12-01",
+    nextCalibrationDate: "2026-12-01",
+    calibrationAgency: "사외",
+    certificateNo: "CAL-2025-012",
+    status: "사용중",
+  },
+  {
+    id: 5,
+    managementNo: "GA-005",
+    equipmentName: "경도계",
+    model: "HR-320MS",
+    manufacturer: "Mitutoyo",
+    purchaseDate: "2023-02-15",
+    measurementRange: "HRC 20-70",
+    accuracy: "0.5 HRC",
+    department: "생산기술부",
+    storageLocation: "시험실",
+    calibrationCycle: 12,
+    lastCalibrationDate: "2026-02-15",
+    nextCalibrationDate: "2027-02-15",
+    calibrationAgency: "사외",
+    certificateNo: "CAL-2026-004",
+    status: "수리중",
+  },
+];
+
+const initialHistories: CalibrationHistory[] = [
+  {
+    id: 1,
+    equipmentId: 1,
+    calibrationDate: "2026-01-15",
+    result: "합격",
+    certificateNo: "CAL-2026-001",
+    remarks: "정상 교정 완료",
+  },
+  {
+    id: 2,
+    equipmentId: 1,
+    calibrationDate: "2025-01-15",
+    result: "합격",
+    certificateNo: "CAL-2025-001",
+    remarks: "",
+  },
+  {
+    id: 3,
+    equipmentId: 2,
+    calibrationDate: "2026-02-20",
+    result: "조정후합격",
+    certificateNo: "CAL-2026-002",
+    remarks: "영점 조정 후 합격",
+  },
+  {
+    id: 4,
+    equipmentId: 3,
+    calibrationDate: "2026-03-10",
+    result: "합격",
+    certificateNo: "CAL-2026-003",
+    remarks: "",
+  },
+  {
+    id: 5,
+    equipmentId: 4,
+    calibrationDate: "2025-12-01",
+    result: "합격",
+    certificateNo: "CAL-2025-012",
+    remarks: "연간 정기 교정",
+  },
+];
+
 export default function CalibrationPage() {
-  const [records, setRecords] = useState<CalibrationRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [search, setSearch] = useState("");
-  const [formData, setFormData] = useState({
-    calibrationDate: new Date().toISOString().split("T")[0],
-    instrumentNo: "",
-    instrumentName: "",
-    calibrationType: "",
-    calibrator: "",
-    standardUsed: "",
-    beforeValue: "",
-    afterValue: "",
-    result: "",
-    certificateNo: "",
+  const [activeTab, setActiveTab] = useState("info");
+  const [equipments, setEquipments] = useState<Equipment[]>(initialEquipments);
+  const [histories, setHistories] = useState<CalibrationHistory[]>(initialHistories);
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(
+    initialEquipments[0]
+  );
+  const [showEquipmentForm, setShowEquipmentForm] = useState(false);
+  const [showHistoryForm, setShowHistoryForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Equipment form state
+  const [equipmentForm, setEquipmentForm] = useState<Omit<Equipment, "id">>({
+    managementNo: "",
+    equipmentName: "",
+    model: "",
+    manufacturer: "",
+    purchaseDate: "",
+    measurementRange: "",
+    accuracy: "",
+    department: "",
+    storageLocation: "",
+    calibrationCycle: 12,
+    lastCalibrationDate: "",
     nextCalibrationDate: "",
+    calibrationAgency: "사내",
+    certificateNo: "",
+    status: "사용중",
   });
 
-  useEffect(() => {
-    setLoading(false);
-  }, []);
+  // History form state
+  const [historyForm, setHistoryForm] = useState<Omit<CalibrationHistory, "id">>({
+    equipmentId: 0,
+    calibrationDate: new Date().toISOString().split("T")[0],
+    result: "합격",
+    certificateNo: "",
+    remarks: "",
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleEquipmentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newRecord: CalibrationRecord = {
+    const newEquipment: Equipment = {
       id: Date.now(),
-      ...formData,
+      ...equipmentForm,
     };
-    setRecords([newRecord, ...records]);
-    setShowForm(false);
-    setFormData({
-      calibrationDate: new Date().toISOString().split("T")[0],
-      instrumentNo: "",
-      instrumentName: "",
-      calibrationType: "",
-      calibrator: "",
-      standardUsed: "",
-      beforeValue: "",
-      afterValue: "",
-      result: "",
-      certificateNo: "",
-      nextCalibrationDate: "",
-    });
-    alert("교정 기록이 저장되었습니다.");
+    setEquipments([newEquipment, ...equipments]);
+    setSelectedEquipment(newEquipment);
+    setShowEquipmentForm(false);
+    resetEquipmentForm();
+    alert("계측기가 등록되었습니다.");
   };
 
-  const filteredRecords = records.filter(
-    (r) =>
-      r.instrumentNo.toLowerCase().includes(search.toLowerCase()) ||
-      r.instrumentName.toLowerCase().includes(search.toLowerCase())
+  const handleHistorySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEquipment) return;
+
+    const newHistory: CalibrationHistory = {
+      id: Date.now(),
+      ...historyForm,
+      equipmentId: selectedEquipment.id,
+    };
+    setHistories([newHistory, ...histories]);
+
+    // Update equipment's last calibration date
+    const updatedEquipments = equipments.map((eq) =>
+      eq.id === selectedEquipment.id
+        ? {
+            ...eq,
+            lastCalibrationDate: historyForm.calibrationDate,
+            certificateNo: historyForm.certificateNo,
+          }
+        : eq
+    );
+    setEquipments(updatedEquipments);
+    setSelectedEquipment({
+      ...selectedEquipment,
+      lastCalibrationDate: historyForm.calibrationDate,
+      certificateNo: historyForm.certificateNo,
+    });
+
+    setShowHistoryForm(false);
+    resetHistoryForm();
+    alert("교정 이력이 등록되었습니다.");
+  };
+
+  const resetEquipmentForm = () => {
+    setEquipmentForm({
+      managementNo: "",
+      equipmentName: "",
+      model: "",
+      manufacturer: "",
+      purchaseDate: "",
+      measurementRange: "",
+      accuracy: "",
+      department: "",
+      storageLocation: "",
+      calibrationCycle: 12,
+      lastCalibrationDate: "",
+      nextCalibrationDate: "",
+      calibrationAgency: "사내",
+      certificateNo: "",
+      status: "사용중",
+    });
+  };
+
+  const resetHistoryForm = () => {
+    setHistoryForm({
+      equipmentId: 0,
+      calibrationDate: new Date().toISOString().split("T")[0],
+      result: "합격",
+      certificateNo: "",
+      remarks: "",
+    });
+  };
+
+  const getStatusBadge = (status: Equipment["status"]) => {
+    const variants: Record<Equipment["status"], "success" | "warning" | "error" | "secondary"> = {
+      사용중: "success",
+      교정중: "warning",
+      수리중: "warning",
+      폐기: "error",
+    };
+    return <Badge variant={variants[status]}>{status}</Badge>;
+  };
+
+  const getResultBadge = (result: CalibrationHistory["result"]) => {
+    const variants: Record<CalibrationHistory["result"], "success" | "warning" | "error"> = {
+      합격: "success",
+      불합격: "error",
+      조정후합격: "warning",
+    };
+    return <Badge variant={variants[result]}>{result}</Badge>;
+  };
+
+  const filteredEquipments = equipments.filter(
+    (eq) =>
+      eq.managementNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      eq.equipmentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      eq.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const selectedEquipmentHistories = histories.filter(
+    (h) => selectedEquipment && h.equipmentId === selectedEquipment.id
+  );
+
+  // Calculate days until next calibration
+  const getDaysUntilCalibration = (nextDate: string) => {
+    const today = new Date();
+    const next = new Date(nextDate);
+    const diffTime = next.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">계측기 교정</h1>
-          <p className="text-muted-foreground">계측기 교정 관리 및 이력</p>
+          <h1 className="text-3xl font-bold">계측기 관리/교정</h1>
+          <p className="text-muted-foreground">
+            계측기 정보 및 교정 관리 시스템
+          </p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          <Plus className="mr-2 h-4 w-4" />
-          교정 등록
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowEquipmentForm(!showEquipmentForm)}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            계측기 등록
+          </Button>
+        </div>
       </div>
 
-      {showForm && (
+      {/* Equipment Registration Form */}
+      {showEquipmentForm && (
         <Card>
           <CardHeader>
-            <CardTitle>계측기 교정 등록</CardTitle>
+            <CardTitle>계측기 등록</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-4">
-                <div className="space-y-2">
-                  <Label>교정일자 *</Label>
-                  <Input
-                    type="date"
-                    value={formData.calibrationDate}
-                    onChange={(e) => setFormData({ ...formData, calibrationDate: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>계측기번호 *</Label>
-                  <Input
-                    value={formData.instrumentNo}
-                    onChange={(e) => setFormData({ ...formData, instrumentNo: e.target.value })}
-                    placeholder="GA-001"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>계측기명 *</Label>
-                  <Input
-                    value={formData.instrumentName}
-                    onChange={(e) => setFormData({ ...formData, instrumentName: e.target.value })}
-                    placeholder="버니어캘리퍼스"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>교정유형 *</Label>
-                  <Select value={formData.calibrationType} onValueChange={(v) => setFormData({ ...formData, calibrationType: v })} required>
-                    <SelectTrigger><SelectValue placeholder="선택" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="사내">사내교정</SelectItem>
-                      <SelectItem value="외부">외부교정</SelectItem>
-                    </SelectContent>
-                  </Select>
+            <form onSubmit={handleEquipmentSubmit} className="space-y-6">
+              {/* Header Information */}
+              <div className="border-b pb-4">
+                <h4 className="font-medium mb-4">기본 정보</h4>
+                <div className="grid gap-4 md:grid-cols-5">
+                  <div className="space-y-2">
+                    <Label>관리번호 *</Label>
+                    <Input
+                      value={equipmentForm.managementNo}
+                      onChange={(e) =>
+                        setEquipmentForm({
+                          ...equipmentForm,
+                          managementNo: e.target.value,
+                        })
+                      }
+                      placeholder="GA-001"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>계측기명 *</Label>
+                    <Input
+                      value={equipmentForm.equipmentName}
+                      onChange={(e) =>
+                        setEquipmentForm({
+                          ...equipmentForm,
+                          equipmentName: e.target.value,
+                        })
+                      }
+                      placeholder="버니어캘리퍼스"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>모델</Label>
+                    <Input
+                      value={equipmentForm.model}
+                      onChange={(e) =>
+                        setEquipmentForm({
+                          ...equipmentForm,
+                          model: e.target.value,
+                        })
+                      }
+                      placeholder="CD-15CPX"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>제조사</Label>
+                    <Input
+                      value={equipmentForm.manufacturer}
+                      onChange={(e) =>
+                        setEquipmentForm({
+                          ...equipmentForm,
+                          manufacturer: e.target.value,
+                        })
+                      }
+                      placeholder="Mitutoyo"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>구입일</Label>
+                    <Input
+                      type="date"
+                      value={equipmentForm.purchaseDate}
+                      onChange={(e) =>
+                        setEquipmentForm({
+                          ...equipmentForm,
+                          purchaseDate: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-4">
-                <div className="space-y-2">
-                  <Label>교정기관/담당자</Label>
-                  <Input
-                    value={formData.calibrator}
-                    onChange={(e) => setFormData({ ...formData, calibrator: e.target.value })}
-                    placeholder="한국표준과학연구원"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>사용표준기</Label>
-                  <Input
-                    value={formData.standardUsed}
-                    onChange={(e) => setFormData({ ...formData, standardUsed: e.target.value })}
-                    placeholder="표준기 정보"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>교정전 값</Label>
-                  <Input
-                    value={formData.beforeValue}
-                    onChange={(e) => setFormData({ ...formData, beforeValue: e.target.value })}
-                    placeholder="측정값"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>교정후 값</Label>
-                  <Input
-                    value={formData.afterValue}
-                    onChange={(e) => setFormData({ ...formData, afterValue: e.target.value })}
-                    placeholder="측정값"
-                  />
+              {/* Equipment Info */}
+              <div className="border-b pb-4">
+                <h4 className="font-medium mb-4">계측기 정보</h4>
+                <div className="grid gap-4 md:grid-cols-4">
+                  <div className="space-y-2">
+                    <Label>계측범위</Label>
+                    <Input
+                      value={equipmentForm.measurementRange}
+                      onChange={(e) =>
+                        setEquipmentForm({
+                          ...equipmentForm,
+                          measurementRange: e.target.value,
+                        })
+                      }
+                      placeholder="0-150mm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>정밀도</Label>
+                    <Input
+                      value={equipmentForm.accuracy}
+                      onChange={(e) =>
+                        setEquipmentForm({
+                          ...equipmentForm,
+                          accuracy: e.target.value,
+                        })
+                      }
+                      placeholder="0.02mm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>사용부서</Label>
+                    <Input
+                      value={equipmentForm.department}
+                      onChange={(e) =>
+                        setEquipmentForm({
+                          ...equipmentForm,
+                          department: e.target.value,
+                        })
+                      }
+                      placeholder="품질관리부"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>보관위치</Label>
+                    <Input
+                      value={equipmentForm.storageLocation}
+                      onChange={(e) =>
+                        setEquipmentForm({
+                          ...equipmentForm,
+                          storageLocation: e.target.value,
+                        })
+                      }
+                      placeholder="측정실 A-1"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label>결과 *</Label>
-                  <Select value={formData.result} onValueChange={(v) => setFormData({ ...formData, result: v })} required>
-                    <SelectTrigger><SelectValue placeholder="선택" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="합격">합격</SelectItem>
-                      <SelectItem value="불합격">불합격</SelectItem>
-                      <SelectItem value="조건부">조건부</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>성적서 번호</Label>
-                  <Input
-                    value={formData.certificateNo}
-                    onChange={(e) => setFormData({ ...formData, certificateNo: e.target.value })}
-                    placeholder="CAL-2024-001"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>차기 교정일</Label>
-                  <Input
-                    type="date"
-                    value={formData.nextCalibrationDate}
-                    onChange={(e) => setFormData({ ...formData, nextCalibrationDate: e.target.value })}
-                  />
+              {/* Calibration Management */}
+              <div className="border-b pb-4">
+                <h4 className="font-medium mb-4">교정 관리</h4>
+                <div className="grid gap-4 md:grid-cols-5">
+                  <div className="space-y-2">
+                    <Label>교정주기 (개월)</Label>
+                    <Input
+                      type="number"
+                      value={equipmentForm.calibrationCycle}
+                      onChange={(e) =>
+                        setEquipmentForm({
+                          ...equipmentForm,
+                          calibrationCycle: parseInt(e.target.value) || 12,
+                        })
+                      }
+                      min={1}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>최종교정일</Label>
+                    <Input
+                      type="date"
+                      value={equipmentForm.lastCalibrationDate}
+                      onChange={(e) =>
+                        setEquipmentForm({
+                          ...equipmentForm,
+                          lastCalibrationDate: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>차기교정예정일</Label>
+                    <Input
+                      type="date"
+                      value={equipmentForm.nextCalibrationDate}
+                      onChange={(e) =>
+                        setEquipmentForm({
+                          ...equipmentForm,
+                          nextCalibrationDate: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>교정기관</Label>
+                    <Select
+                      value={equipmentForm.calibrationAgency}
+                      onValueChange={(v) =>
+                        setEquipmentForm({
+                          ...equipmentForm,
+                          calibrationAgency: v,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="사내">사내</SelectItem>
+                        <SelectItem value="사외">사외</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>계측기 상태</Label>
+                    <Select
+                      value={equipmentForm.status}
+                      onValueChange={(v) =>
+                        setEquipmentForm({ ...equipmentForm, status: v as Equipment["status"] })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="사용중">사용중</SelectItem>
+                        <SelectItem value="교정중">교정중</SelectItem>
+                        <SelectItem value="수리중">수리중</SelectItem>
+                        <SelectItem value="폐기">폐기</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
               <div className="flex justify-end gap-4">
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>취소</Button>
-                <Button type="submit"><Save className="mr-2 h-4 w-4" />저장</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowEquipmentForm(false);
+                    resetEquipmentForm();
+                  }}
+                >
+                  취소
+                </Button>
+                <Button type="submit">
+                  <Save className="mr-2 h-4 w-4" />
+                  저장
+                </Button>
               </div>
             </form>
           </CardContent>
         </Card>
       )}
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="계측기번호, 계측기명으로 검색..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-
+      {/* Equipment Selector */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Gauge className="h-5 w-5" />
-            교정 이력
+            <Settings className="h-5 w-5" />
+            계측기 선택
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <p>로딩 중...</p>
-          ) : filteredRecords.length === 0 ? (
-            <p className="text-muted-foreground py-8 text-center">교정 기록이 없습니다.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>교정일자</TableHead>
-                  <TableHead>계측기번호</TableHead>
-                  <TableHead>계측기명</TableHead>
-                  <TableHead>교정유형</TableHead>
-                  <TableHead>교정기관</TableHead>
-                  <TableHead>결과</TableHead>
-                  <TableHead>차기교정일</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRecords.map((record) => (
-                  <TableRow key={record.id}>
-                    <TableCell>{record.calibrationDate}</TableCell>
-                    <TableCell className="font-mono">{record.instrumentNo}</TableCell>
-                    <TableCell>{record.instrumentName}</TableCell>
-                    <TableCell><Badge variant="outline">{record.calibrationType}</Badge></TableCell>
-                    <TableCell>{record.calibrator || "-"}</TableCell>
-                    <TableCell>
-                      <Badge variant={record.result === "합격" ? "success" : record.result === "조건부" ? "warning" : "destructive"}>
-                        {record.result}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{record.nextCalibrationDate || "-"}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
+              <Label>계측기</Label>
+              <Select
+                value={selectedEquipment?.id.toString() || ""}
+                onValueChange={(v) => {
+                  const eq = equipments.find((e) => e.id.toString() === v);
+                  setSelectedEquipment(eq || null);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="계측기를 선택하세요" />
+                </SelectTrigger>
+                <SelectContent>
+                  {equipments.map((eq) => (
+                    <SelectItem key={eq.id} value={eq.id.toString()}>
+                      {eq.managementNo} - {eq.equipmentName} ({eq.status})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedEquipment && (
+              <div className="flex gap-2">
+                {getStatusBadge(selectedEquipment.status)}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
+
+      {/* Main Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="info" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            계측기 정보
+          </TabsTrigger>
+          <TabsTrigger value="schedule" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            교정 계획
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" />
+            교정 이력
+          </TabsTrigger>
+          <TabsTrigger value="list" className="flex items-center gap-2">
+            <Gauge className="h-4 w-4" />
+            계측기 목록
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab 1: Equipment Info */}
+        <TabsContent value="info">
+          {selectedEquipment ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>계측기 상세 정보</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Header Info */}
+                <div className="border-b pb-4">
+                  <h4 className="font-medium mb-4 text-lg">기본 정보</h4>
+                  <div className="grid gap-4 md:grid-cols-5">
+                    <div>
+                      <Label className="text-muted-foreground">관리번호</Label>
+                      <p className="font-mono font-medium">
+                        {selectedEquipment.managementNo}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">계측기명</Label>
+                      <p className="font-medium">
+                        {selectedEquipment.equipmentName}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">모델</Label>
+                      <p>{selectedEquipment.model || "-"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">제조사</Label>
+                      <p>{selectedEquipment.manufacturer || "-"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">구입일</Label>
+                      <p>{selectedEquipment.purchaseDate || "-"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Equipment Details */}
+                <div className="border-b pb-4">
+                  <h4 className="font-medium mb-4 text-lg">계측기 정보</h4>
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <div>
+                      <Label className="text-muted-foreground">계측범위</Label>
+                      <p>{selectedEquipment.measurementRange || "-"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">정밀도</Label>
+                      <p>{selectedEquipment.accuracy || "-"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">사용부서</Label>
+                      <p>{selectedEquipment.department || "-"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">보관위치</Label>
+                      <p>{selectedEquipment.storageLocation || "-"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Calibration Management */}
+                <div className="border-b pb-4">
+                  <h4 className="font-medium mb-4 text-lg">교정 관리</h4>
+                  <div className="grid gap-4 md:grid-cols-5">
+                    <div>
+                      <Label className="text-muted-foreground">
+                        교정주기 (개월)
+                      </Label>
+                      <p>{selectedEquipment.calibrationCycle}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">최종교정일</Label>
+                      <p>{selectedEquipment.lastCalibrationDate || "-"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">
+                        차기교정예정일
+                      </Label>
+                      <p className="font-medium text-primary">
+                        {selectedEquipment.nextCalibrationDate || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">교정기관</Label>
+                      <p>
+                        <Badge variant="outline">
+                          {selectedEquipment.calibrationAgency}
+                        </Badge>
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">
+                        교정성적서 번호
+                      </Label>
+                      <p className="font-mono">
+                        {selectedEquipment.certificateNo || "-"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <h4 className="font-medium mb-4 text-lg">계측기 상태</h4>
+                  <div className="flex items-center gap-4">
+                    {getStatusBadge(selectedEquipment.status)}
+                    {selectedEquipment.nextCalibrationDate && (
+                      <span className="text-sm text-muted-foreground">
+                        (차기 교정까지{" "}
+                        {getDaysUntilCalibration(
+                          selectedEquipment.nextCalibrationDate
+                        )}
+                        일 남음)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                계측기를 선택하세요.
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Tab 2: Calibration Schedule */}
+        <TabsContent value="schedule">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                교정 계획
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>관리번호</TableHead>
+                    <TableHead>계측기명</TableHead>
+                    <TableHead>교정주기</TableHead>
+                    <TableHead>최종교정일</TableHead>
+                    <TableHead>차기교정예정일</TableHead>
+                    <TableHead>남은 일수</TableHead>
+                    <TableHead>교정기관</TableHead>
+                    <TableHead>상태</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {equipments
+                    .filter((eq) => eq.status !== "폐기")
+                    .sort(
+                      (a, b) =>
+                        new Date(a.nextCalibrationDate).getTime() -
+                        new Date(b.nextCalibrationDate).getTime()
+                    )
+                    .map((eq) => {
+                      const daysLeft = getDaysUntilCalibration(
+                        eq.nextCalibrationDate
+                      );
+                      return (
+                        <TableRow
+                          key={eq.id}
+                          className={
+                            daysLeft < 30
+                              ? "bg-red-50"
+                              : daysLeft < 60
+                              ? "bg-yellow-50"
+                              : ""
+                          }
+                        >
+                          <TableCell className="font-mono">
+                            {eq.managementNo}
+                          </TableCell>
+                          <TableCell>{eq.equipmentName}</TableCell>
+                          <TableCell>{eq.calibrationCycle}개월</TableCell>
+                          <TableCell>{eq.lastCalibrationDate}</TableCell>
+                          <TableCell className="font-medium">
+                            {eq.nextCalibrationDate}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                daysLeft < 30
+                                  ? "error"
+                                  : daysLeft < 60
+                                  ? "warning"
+                                  : "success"
+                              }
+                            >
+                              {daysLeft}일
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {eq.calibrationAgency}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{getStatusBadge(eq.status)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab 3: Calibration History */}
+        <TabsContent value="history">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5" />
+                교정 이력 - {selectedEquipment?.equipmentName || ""}
+              </CardTitle>
+              {selectedEquipment && (
+                <Button
+                  size="sm"
+                  onClick={() => setShowHistoryForm(!showHistoryForm)}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  이력 추가
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {showHistoryForm && selectedEquipment && (
+                <div className="border rounded-lg p-4 bg-muted/30">
+                  <form onSubmit={handleHistorySubmit} className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-4">
+                      <div className="space-y-2">
+                        <Label>교정일 *</Label>
+                        <Input
+                          type="date"
+                          value={historyForm.calibrationDate}
+                          onChange={(e) =>
+                            setHistoryForm({
+                              ...historyForm,
+                              calibrationDate: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>교정결과 *</Label>
+                        <Select
+                          value={historyForm.result}
+                          onValueChange={(v) =>
+                            setHistoryForm({ ...historyForm, result: v as CalibrationHistory["result"] })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="합격">합격</SelectItem>
+                            <SelectItem value="불합격">불합격</SelectItem>
+                            <SelectItem value="조정후합격">조정후합격</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>교정성적서 번호</Label>
+                        <Input
+                          value={historyForm.certificateNo}
+                          onChange={(e) =>
+                            setHistoryForm({
+                              ...historyForm,
+                              certificateNo: e.target.value,
+                            })
+                          }
+                          placeholder="CAL-2026-XXX"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>비고</Label>
+                        <Input
+                          value={historyForm.remarks}
+                          onChange={(e) =>
+                            setHistoryForm({
+                              ...historyForm,
+                              remarks: e.target.value,
+                            })
+                          }
+                          placeholder="비고 사항"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShowHistoryForm(false);
+                          resetHistoryForm();
+                        }}
+                      >
+                        취소
+                      </Button>
+                      <Button type="submit" size="sm">
+                        <Save className="mr-2 h-4 w-4" />
+                        저장
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {selectedEquipment ? (
+                selectedEquipmentHistories.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>교정일</TableHead>
+                        <TableHead>교정결과</TableHead>
+                        <TableHead>교정성적서</TableHead>
+                        <TableHead>비고</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedEquipmentHistories.map((history) => (
+                        <TableRow key={history.id}>
+                          <TableCell>{history.calibrationDate}</TableCell>
+                          <TableCell>{getResultBadge(history.result)}</TableCell>
+                          <TableCell className="font-mono">
+                            {history.certificateNo || "-"}
+                          </TableCell>
+                          <TableCell>{history.remarks || "-"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">
+                    교정 이력이 없습니다.
+                  </p>
+                )
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  계측기를 선택하세요.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab 4: Equipment List */}
+        <TabsContent value="list">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gauge className="h-5 w-5" />
+                계측기 목록
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="관리번호, 계측기명, 부서로 검색..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>관리번호</TableHead>
+                    <TableHead>계측기명</TableHead>
+                    <TableHead>모델</TableHead>
+                    <TableHead>사용부서</TableHead>
+                    <TableHead>차기교정예정일</TableHead>
+                    <TableHead>상태</TableHead>
+                    <TableHead>선택</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEquipments.length > 0 ? (
+                    filteredEquipments.map((eq) => (
+                      <TableRow
+                        key={eq.id}
+                        className={
+                          selectedEquipment?.id === eq.id ? "bg-muted" : ""
+                        }
+                      >
+                        <TableCell className="font-mono">
+                          {eq.managementNo}
+                        </TableCell>
+                        <TableCell>{eq.equipmentName}</TableCell>
+                        <TableCell>{eq.model || "-"}</TableCell>
+                        <TableCell>{eq.department || "-"}</TableCell>
+                        <TableCell>
+                          {eq.nextCalibrationDate && (
+                            <span
+                              className={
+                                getDaysUntilCalibration(eq.nextCalibrationDate) <
+                                30
+                                  ? "text-red-600 font-medium"
+                                  : ""
+                              }
+                            >
+                              {eq.nextCalibrationDate}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(eq.status)}</TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant={
+                              selectedEquipment?.id === eq.id
+                                ? "default"
+                                : "outline"
+                            }
+                            onClick={() => {
+                              setSelectedEquipment(eq);
+                              setActiveTab("info");
+                            }}
+                          >
+                            상세보기
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="text-center text-muted-foreground py-8"
+                      >
+                        검색 결과가 없습니다.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
