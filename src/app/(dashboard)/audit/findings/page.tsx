@@ -8,13 +8,13 @@ import { Plus, FileSearch } from "lucide-react";
 
 interface AuditFinding {
   id: number;
-  findingNumber: string;
-  type: string;
-  severity: string;
+  findingNo: number;
+  findingType: string;
   clauseReference: string;
-  description: string;
+  requirement: string;
+  evidence: string;
   status: string;
-  auditPlan?: { planNumber: string };
+  audit?: { plan?: { planNumber: string } };
 }
 
 export default function AuditFindingsPage() {
@@ -97,15 +97,15 @@ export default function AuditFindingsPage() {
               <TableBody>
                 {findings.map((finding) => (
                   <TableRow key={finding.id}>
-                    <TableCell className="font-mono">{finding.findingNumber}</TableCell>
-                    <TableCell>{finding.auditPlan?.planNumber || "-"}</TableCell>
+                    <TableCell className="font-mono">{finding.findingNo}</TableCell>
+                    <TableCell>{finding.audit?.plan?.planNumber || "-"}</TableCell>
                     <TableCell>{finding.clauseReference || "-"}</TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${severityColors[finding.severity] || "bg-gray-100"}`}>
-                        {severityLabels[finding.severity] || finding.severity}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${severityColors[finding.findingType] || "bg-gray-100"}`}>
+                        {severityLabels[finding.findingType] || finding.findingType}
                       </span>
                     </TableCell>
-                    <TableCell className="max-w-xs truncate">{finding.description}</TableCell>
+                    <TableCell className="max-w-xs truncate">{finding.requirement}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[finding.status] || "bg-gray-100"}`}>
                         {statusLabels[finding.status] || finding.status}

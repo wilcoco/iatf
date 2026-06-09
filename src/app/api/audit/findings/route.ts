@@ -4,7 +4,12 @@ import prisma from "@/lib/prisma";
 export async function GET() {
   try {
     const findings = await prisma.auditFinding.findMany({
-      include: { auditPlan: true },
+      include: {
+        audit: {
+          include: { plan: true }
+        },
+        correctiveAction: true,
+      },
       orderBy: { createdAt: "desc" },
       take: 100,
     });
