@@ -1,15 +1,22 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const searchParams = request.nextUrl.searchParams;
+    const controlItemId = searchParams.get("controlItemId");
+    const limit = searchParams.get("limit");
+
+    const where = controlItemId ? { controlItemId: Number(controlItemId) } : {};
+
     const records = await prisma.inspectionRecord.findMany({
+      where,
       include: {
         controlItem: true,
         inspector: true,
       },
       orderBy: { inspectionDate: "desc" },
-      take: 100,
+      take: limit ? Number(limit) : 100,
     });
     return NextResponse.json(records);
   } catch (error) {

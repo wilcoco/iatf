@@ -41,9 +41,19 @@ const navigation: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
-    title: "관리항목 (118)",
-    href: "/control-items",
+    title: "기록입력 (118항목)",
+    href: "/records",
     icon: ClipboardCheck,
+  },
+  {
+    title: "기록이력 조회",
+    href: "/records/history",
+    icon: Search,
+  },
+  {
+    title: "관리항목 목록",
+    href: "/control-items",
+    icon: FileText,
   },
   {
     title: "기준정보",
