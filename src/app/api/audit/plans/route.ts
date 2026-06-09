@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const plans = await prisma.auditPlan.findMany({
       include: { leadAuditor: true },
-      orderBy: { scheduledDate: "desc" },
+      orderBy: { planDate: "desc" },
       take: 100,
     });
     return NextResponse.json(plans);

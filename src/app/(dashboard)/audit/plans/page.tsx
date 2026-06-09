@@ -8,10 +8,10 @@ import { Plus, Calendar } from "lucide-react";
 
 interface AuditPlan {
   id: number;
-  planNumber: string;
+  year: number;
   auditType: string;
-  scope: string;
-  scheduledDate: string;
+  auditScope: string;
+  planDate: string;
   status: string;
   leadAuditor?: { name: string };
 }
@@ -91,10 +91,10 @@ export default function AuditPlansPage() {
               <TableBody>
                 {plans.map((plan) => (
                   <TableRow key={plan.id}>
-                    <TableCell className="font-mono">{plan.planNumber}</TableCell>
+                    <TableCell className="font-mono">{plan.year}</TableCell>
                     <TableCell>{typeLabels[plan.auditType] || plan.auditType}</TableCell>
-                    <TableCell className="max-w-xs truncate">{plan.scope}</TableCell>
-                    <TableCell>{new Date(plan.scheduledDate).toLocaleDateString("ko-KR")}</TableCell>
+                    <TableCell className="max-w-xs truncate">{plan.auditScope}</TableCell>
+                    <TableCell>{plan.planDate ? new Date(plan.planDate).toLocaleDateString("ko-KR") : "-"}</TableCell>
                     <TableCell>{plan.leadAuditor?.name || "-"}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[plan.status] || "bg-gray-100"}`}>
