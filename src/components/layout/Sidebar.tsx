@@ -41,13 +41,17 @@ const navigation: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
+    title: "관리항목 (118)",
+    href: "/control-items",
+    icon: ClipboardCheck,
+  },
+  {
     title: "기준정보",
     icon: Database,
     children: [
       { title: "부서관리", href: "/master/departments", icon: Building2 },
       { title: "사용자관리", href: "/master/users", icon: Users },
       { title: "프로세스/절차서", href: "/master/processes", icon: FileText },
-      { title: "관리항목", href: "/master/control-items", icon: ClipboardCheck },
       { title: "차종/부품", href: "/master/parts", icon: Box },
       { title: "설비", href: "/master/equipment", icon: Factory },
       { title: "금형", href: "/master/molds", icon: Hammer },
