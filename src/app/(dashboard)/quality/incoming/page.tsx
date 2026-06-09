@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,10 @@ import {
   TrendingUp,
   Send,
   Edit,
+  Target,
+  ArrowUp,
+  ArrowDown,
+  Minus,
 } from "lucide-react";
 
 // Types
@@ -76,6 +80,20 @@ interface NonconformityRecord {
   notificationDate: string;
   status: "미처리" | "처리중" | "완료";
   capaNo: string;
+}
+
+// Monthly defect rate data type
+interface MonthlyDefectData {
+  supplier: string;
+  receivedQty: number;
+  defectQty: number;
+  defectRate: number;
+}
+
+// Supplier monthly trend data type
+interface SupplierMonthlyTrend {
+  supplier: string;
+  monthlyData: Record<string, { receivedQty: number; defectQty: number; defectRate: number }>;
 }
 
 // Generate inspection number

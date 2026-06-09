@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wrench, Plus, Save, Calendar, ClipboardList, FileCheck, BarChart3 } from "lucide-react";
+import { Wrench, Plus, Save, Calendar, ClipboardList, FileCheck, BarChart3, Search, AlertTriangle } from "lucide-react";
 
 // Types
 interface Equipment {
@@ -49,6 +49,42 @@ interface InspectionResult {
   result: "good" | "bad";
   action: string;
   remarks: string;
+}
+
+// Patrol Inspection Types
+interface PatrolInspectionItem {
+  id: string;
+  category: string;
+  item: string;
+}
+
+interface PatrolInspection {
+  id: number;
+  inspectionDate: string;
+  inspectionTime: string;
+  patrolArea: string;
+  inspector: string;
+  items: {
+    itemId: string;
+    result: "normal" | "abnormal";
+    action?: string;
+  }[];
+  remarks: string;
+}
+
+// Equipment Anomaly Report Types
+interface AnomalyReport {
+  id: number;
+  reportDate: string;
+  reportTime: string;
+  equipmentId: string;
+  equipmentName: string;
+  anomalyDescription: string;
+  emergencyAction: string;
+  rootCause: string;
+  permanentSolution: string;
+  reporter: string;
+  status: "open" | "in-progress" | "resolved";
 }
 
 const MONTHS = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
@@ -117,12 +153,117 @@ const initialInspectionResults: InspectionResult[] = [
   { id: 3, equipmentId: "EQ-001", inspectionItemId: 3, inspectionDate: "2026-06-01", inspector: "김철수", result: "bad", action: "절연 처리 완료", remarks: "습기 유입으로 저하" },
 ];
 
+// Patrol Inspection Items (standard checklist)
+const PATROL_INSPECTION_ITEMS: PatrolInspectionItem[] = [
+  { id: "PI-001", category: "소음", item: "이상소음" },
+  { id: "PI-002", category: "진동", item: "비정상 진동" },
+  { id: "PI-003", category: "누유", item: "오일/유압 누출" },
+  { id: "PI-004", category: "온도", item: "과열 여부" },
+  { id: "PI-005", category: "전기", item: "전기 접촉 이상" },
+  { id: "PI-006", category: "외관", item: "외관 손상/파손" },
+  { id: "PI-007", category: "청결", item: "오염/이물질" },
+  { id: "PI-008", category: "안전", item: "안전장치 작동" },
+];
+
+// Patrol Areas (Lines)
+const PATROL_AREAS = ["A라인", "B라인", "C라인", "조립라인", "검사라인"];
+
+// Sample patrol inspections
+const initialPatrolInspections: PatrolInspection[] = [
+  {
+    id: 1,
+    inspectionDate: "2026-06-10",
+    inspectionTime: "09:00",
+    patrolArea: "A라인",
+    inspector: "김철수",
+    items: [
+      { itemId: "PI-001", result: "normal" },
+      { itemId: "PI-002", result: "normal" },
+      { itemId: "PI-003", result: "normal" },
+      { itemId: "PI-004", result: "normal" },
+      { itemId: "PI-005", result: "normal" },
+      { itemId: "PI-006", result: "normal" },
+      { itemId: "PI-007", result: "normal" },
+      { itemId: "PI-008", result: "normal" },
+    ],
+    remarks: "",
+  },
+  {
+    id: 2,
+    inspectionDate: "2026-06-10",
+    inspectionTime: "09:30",
+    patrolArea: "B라인",
+    inspector: "이영희",
+    items: [
+      { itemId: "PI-001", result: "abnormal", action: "프레스 #1 이상소음 발생, 설비이상보고서 작성" },
+      { itemId: "PI-002", result: "normal" },
+      { itemId: "PI-003", result: "abnormal", action: "용접기 #1 미세 누유 확인, 모니터링 중" },
+      { itemId: "PI-004", result: "normal" },
+      { itemId: "PI-005", result: "normal" },
+      { itemId: "PI-006", result: "normal" },
+      { itemId: "PI-007", result: "normal" },
+      { itemId: "PI-008", result: "normal" },
+    ],
+    remarks: "B라인 프레스 이상 발견",
+  },
+  {
+    id: 3,
+    inspectionDate: "2026-06-09",
+    inspectionTime: "09:00",
+    patrolArea: "A라인",
+    inspector: "김철수",
+    items: [
+      { itemId: "PI-001", result: "normal" },
+      { itemId: "PI-002", result: "normal" },
+      { itemId: "PI-003", result: "normal" },
+      { itemId: "PI-004", result: "normal" },
+      { itemId: "PI-005", result: "normal" },
+      { itemId: "PI-006", result: "normal" },
+      { itemId: "PI-007", result: "normal" },
+      { itemId: "PI-008", result: "normal" },
+    ],
+    remarks: "",
+  },
+];
+
+// Sample anomaly reports
+const initialAnomalyReports: AnomalyReport[] = [
+  {
+    id: 1,
+    reportDate: "2026-06-10",
+    reportTime: "09:35",
+    equipmentId: "EQ-003",
+    equipmentName: "프레스 #1",
+    anomalyDescription: "가동 중 이상소음 발생. 금속 마찰음으로 추정되는 소리가 간헐적으로 발생함.",
+    emergencyAction: "설비 가동 중단 후 안전구역 확보. 윤활유 주입 시도.",
+    rootCause: "베어링 마모로 인한 소음 발생 (분석 중)",
+    permanentSolution: "베어링 교체 예정 (6/12)",
+    reporter: "이영희",
+    status: "in-progress",
+  },
+  {
+    id: 2,
+    reportDate: "2026-06-05",
+    reportTime: "14:20",
+    equipmentId: "EQ-001",
+    equipmentName: "CNC 선반 #1",
+    anomalyDescription: "절연저항 저하로 인한 누전차단기 작동",
+    emergencyAction: "전원 차단 후 습기 제거 작업 실시",
+    rootCause: "우기로 인한 습기 유입",
+    permanentSolution: "절연 보강 및 방습 커버 설치 완료",
+    reporter: "김철수",
+    status: "resolved",
+  },
+];
+
 export default function MaintenancePage() {
   const [activeTab, setActiveTab] = useState("annual-plan");
   const [equipments] = useState<Equipment[]>(initialEquipments);
   const [annualPlans, setAnnualPlans] = useState<AnnualPlan[]>(initialAnnualPlans);
   const [inspectionItems, setInspectionItems] = useState<InspectionItem[]>(initialInspectionItems);
   const [inspectionResults, setInspectionResults] = useState<InspectionResult[]>(initialInspectionResults);
+  const [patrolInspections, setPatrolInspections] = useState<PatrolInspection[]>(initialPatrolInspections);
+  const [anomalyReports, setAnomalyReports] = useState<AnomalyReport[]>(initialAnomalyReports);
 
   // Header filter state
   const [selectedEquipment, setSelectedEquipment] = useState<string>("");
@@ -131,6 +272,8 @@ export default function MaintenancePage() {
   // Form states
   const [showItemForm, setShowItemForm] = useState(false);
   const [showResultForm, setShowResultForm] = useState(false);
+  const [showPatrolForm, setShowPatrolForm] = useState(false);
+  const [showAnomalyForm, setShowAnomalyForm] = useState(false);
 
   const [newItem, setNewItem] = useState<Omit<InspectionItem, "id">>({
     equipmentId: "",
@@ -149,6 +292,28 @@ export default function MaintenancePage() {
     result: "good",
     action: "",
     remarks: "",
+  });
+
+  const [newPatrol, setNewPatrol] = useState<Omit<PatrolInspection, "id">>({
+    inspectionDate: new Date().toISOString().split("T")[0],
+    inspectionTime: new Date().toTimeString().slice(0, 5),
+    patrolArea: "",
+    inspector: "",
+    items: PATROL_INSPECTION_ITEMS.map(item => ({ itemId: item.id, result: "normal" as const })),
+    remarks: "",
+  });
+
+  const [newAnomaly, setNewAnomaly] = useState<Omit<AnomalyReport, "id">>({
+    reportDate: new Date().toISOString().split("T")[0],
+    reportTime: new Date().toTimeString().slice(0, 5),
+    equipmentId: "",
+    equipmentName: "",
+    anomalyDescription: "",
+    emergencyAction: "",
+    rootCause: "",
+    permanentSolution: "",
+    reporter: "",
+    status: "open",
   });
 
   // Header Component
@@ -832,6 +997,586 @@ export default function MaintenancePage() {
                     </TableRow>
                   );
                 })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+
+  // Tab 5: Patrol Inspection (보전패트롤점검)
+  const PatrolInspectionTab = () => {
+    const [selectedPatrolArea, setSelectedPatrolArea] = useState<string>("all");
+    const [selectedPatrolDate, setSelectedPatrolDate] = useState<string>("");
+
+    const filteredPatrols = patrolInspections.filter(p => {
+      const areaMatch = selectedPatrolArea === "all" || p.patrolArea === selectedPatrolArea;
+      const dateMatch = !selectedPatrolDate || p.inspectionDate === selectedPatrolDate;
+      return areaMatch && dateMatch;
+    });
+
+    const handlePatrolItemResultChange = (itemId: string, result: "normal" | "abnormal") => {
+      setNewPatrol(prev => ({
+        ...prev,
+        items: prev.items.map(item =>
+          item.itemId === itemId ? { ...item, result, action: result === "normal" ? "" : item.action } : item
+        ),
+      }));
+    };
+
+    const handlePatrolItemActionChange = (itemId: string, action: string) => {
+      setNewPatrol(prev => ({
+        ...prev,
+        items: prev.items.map(item =>
+          item.itemId === itemId ? { ...item, action } : item
+        ),
+      }));
+    };
+
+    const handleAddPatrol = () => {
+      if (!newPatrol.patrolArea || !newPatrol.inspector) {
+        alert("순회구역과 점검자를 입력해주세요.");
+        return;
+      }
+      const newPatrolInspection: PatrolInspection = {
+        id: Date.now(),
+        ...newPatrol,
+      };
+      setPatrolInspections([newPatrolInspection, ...patrolInspections]);
+      setNewPatrol({
+        inspectionDate: new Date().toISOString().split("T")[0],
+        inspectionTime: new Date().toTimeString().slice(0, 5),
+        patrolArea: "",
+        inspector: "",
+        items: PATROL_INSPECTION_ITEMS.map(item => ({ itemId: item.id, result: "normal" as const })),
+        remarks: "",
+      });
+      setShowPatrolForm(false);
+      alert("패트롤점검이 등록되었습니다.");
+    };
+
+    const getAbnormalCount = (patrol: PatrolInspection) => {
+      return patrol.items.filter(item => item.result === "abnormal").length;
+    };
+
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            보전패트롤점검표 (일간)
+          </CardTitle>
+          <Button onClick={() => setShowPatrolForm(!showPatrolForm)}>
+            <Plus className="mr-2 h-4 w-4" />
+            점검 등록
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {/* Filter Section */}
+          <div className="mb-6 flex gap-4">
+            <div className="space-y-2">
+              <Label>순회구역</Label>
+              <Select value={selectedPatrolArea} onValueChange={setSelectedPatrolArea}>
+                <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">전체</SelectItem>
+                  {PATROL_AREAS.map(area => (
+                    <SelectItem key={area} value={area}>{area}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>점검일</Label>
+              <Input
+                type="date"
+                value={selectedPatrolDate}
+                onChange={(e) => setSelectedPatrolDate(e.target.value)}
+                className="w-[180px]"
+              />
+            </div>
+            {selectedPatrolDate && (
+              <div className="flex items-end">
+                <Button variant="ghost" onClick={() => setSelectedPatrolDate("")}>초기화</Button>
+              </div>
+            )}
+          </div>
+
+          {showPatrolForm && (
+            <div className="mb-6 p-4 border rounded-lg bg-muted/30">
+              <h4 className="font-medium mb-4">패트롤점검 등록</h4>
+              <div className="grid gap-4 md:grid-cols-4 mb-4">
+                <div className="space-y-2">
+                  <Label>점검일 *</Label>
+                  <Input
+                    type="date"
+                    value={newPatrol.inspectionDate}
+                    onChange={(e) => setNewPatrol({ ...newPatrol, inspectionDate: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>점검시간 *</Label>
+                  <Input
+                    type="time"
+                    value={newPatrol.inspectionTime}
+                    onChange={(e) => setNewPatrol({ ...newPatrol, inspectionTime: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>순회구역 (라인별) *</Label>
+                  <Select value={newPatrol.patrolArea} onValueChange={(v) => setNewPatrol({ ...newPatrol, patrolArea: v })}>
+                    <SelectTrigger><SelectValue placeholder="구역 선택" /></SelectTrigger>
+                    <SelectContent>
+                      {PATROL_AREAS.map(area => (
+                        <SelectItem key={area} value={area}>{area}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>점검자 *</Label>
+                  <Input
+                    value={newPatrol.inspector}
+                    onChange={(e) => setNewPatrol({ ...newPatrol, inspector: e.target.value })}
+                    placeholder="점검자명"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <Label className="mb-2 block">점검항목</Label>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-24">분류</TableHead>
+                      <TableHead>점검항목</TableHead>
+                      <TableHead className="w-32 text-center">점검결과</TableHead>
+                      <TableHead>이상 발견시 조치내용</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {PATROL_INSPECTION_ITEMS.map((item) => {
+                      const patrolItem = newPatrol.items.find(i => i.itemId === item.id);
+                      return (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium">{item.category}</TableCell>
+                          <TableCell>{item.item}</TableCell>
+                          <TableCell className="text-center">
+                            <Select
+                              value={patrolItem?.result || "normal"}
+                              onValueChange={(v) => handlePatrolItemResultChange(item.id, v as "normal" | "abnormal")}
+                            >
+                              <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="normal">정상</SelectItem>
+                                <SelectItem value="abnormal">이상</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            {patrolItem?.result === "abnormal" && (
+                              <Input
+                                value={patrolItem?.action || ""}
+                                onChange={(e) => handlePatrolItemActionChange(item.id, e.target.value)}
+                                placeholder="조치내용 입력"
+                              />
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                <Label>비고</Label>
+                <Textarea
+                  value={newPatrol.remarks}
+                  onChange={(e) => setNewPatrol({ ...newPatrol, remarks: e.target.value })}
+                  placeholder="추가 메모"
+                  rows={2}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowPatrolForm(false)}>취소</Button>
+                <Button onClick={handleAddPatrol}><Save className="mr-2 h-4 w-4" />저장</Button>
+              </div>
+            </div>
+          )}
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>점검일</TableHead>
+                <TableHead>점검시간</TableHead>
+                <TableHead>순회구역</TableHead>
+                <TableHead>점검자</TableHead>
+                <TableHead className="text-center">정상</TableHead>
+                <TableHead className="text-center">이상</TableHead>
+                <TableHead>비고</TableHead>
+                <TableHead className="text-center">상태</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredPatrols.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    등록된 패트롤점검이 없습니다.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredPatrols.map((patrol) => {
+                  const abnormalCount = getAbnormalCount(patrol);
+                  const normalCount = patrol.items.length - abnormalCount;
+                  return (
+                    <TableRow key={patrol.id}>
+                      <TableCell>{patrol.inspectionDate}</TableCell>
+                      <TableCell>{patrol.inspectionTime}</TableCell>
+                      <TableCell className="font-medium">{patrol.patrolArea}</TableCell>
+                      <TableCell>{patrol.inspector}</TableCell>
+                      <TableCell className="text-center text-green-600 font-medium">{normalCount}</TableCell>
+                      <TableCell className="text-center text-red-600 font-medium">{abnormalCount}</TableCell>
+                      <TableCell>{patrol.remarks || "-"}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={abnormalCount > 0 ? "destructive" : "success"}>
+                          {abnormalCount > 0 ? "이상발견" : "정상"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+
+          {/* Legend */}
+          <div className="mt-4 text-sm text-muted-foreground">
+            <p className="font-medium mb-2">점검항목:</p>
+            <div className="flex flex-wrap gap-4">
+              {PATROL_INSPECTION_ITEMS.map(item => (
+                <span key={item.id}>{item.category}: {item.item}</span>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Tab 6: Equipment Anomaly Report (설비이상보고서)
+  const AnomalyReportTab = () => {
+    const [selectedReportStatus, setSelectedReportStatus] = useState<string>("all");
+
+    const filteredReports = anomalyReports.filter(r => {
+      const statusMatch = selectedReportStatus === "all" || r.status === selectedReportStatus;
+      const equipmentMatch = !selectedEquipment || selectedEquipment === "all" || r.equipmentId === selectedEquipment;
+      return statusMatch && equipmentMatch;
+    });
+
+    const handleEquipmentSelect = (equipmentId: string) => {
+      const equipment = equipments.find(e => e.id === equipmentId);
+      setNewAnomaly({
+        ...newAnomaly,
+        equipmentId,
+        equipmentName: equipment?.name || "",
+      });
+    };
+
+    const handleAddAnomaly = () => {
+      if (!newAnomaly.equipmentId || !newAnomaly.anomalyDescription || !newAnomaly.reporter) {
+        alert("설비, 이상내용, 보고자를 입력해주세요.");
+        return;
+      }
+      const newAnomalyReport: AnomalyReport = {
+        id: Date.now(),
+        ...newAnomaly,
+      };
+      setAnomalyReports([newAnomalyReport, ...anomalyReports]);
+      setNewAnomaly({
+        reportDate: new Date().toISOString().split("T")[0],
+        reportTime: new Date().toTimeString().slice(0, 5),
+        equipmentId: "",
+        equipmentName: "",
+        anomalyDescription: "",
+        emergencyAction: "",
+        rootCause: "",
+        permanentSolution: "",
+        reporter: "",
+        status: "open",
+      });
+      setShowAnomalyForm(false);
+      alert("설비이상보고서가 등록되었습니다.");
+    };
+
+    const handleUpdateStatus = (id: number, status: AnomalyReport["status"]) => {
+      setAnomalyReports(prev => prev.map(report =>
+        report.id === id ? { ...report, status } : report
+      ));
+    };
+
+    const getStatusLabel = (status: AnomalyReport["status"]) => {
+      switch (status) {
+        case "open": return "접수";
+        case "in-progress": return "처리중";
+        case "resolved": return "완료";
+        default: return status;
+      }
+    };
+
+    const getStatusVariant = (status: AnomalyReport["status"]) => {
+      switch (status) {
+        case "open": return "destructive";
+        case "in-progress": return "secondary";
+        case "resolved": return "success";
+        default: return "secondary";
+      }
+    };
+
+    // Summary counts
+    const openCount = anomalyReports.filter(r => r.status === "open").length;
+    const inProgressCount = anomalyReports.filter(r => r.status === "in-progress").length;
+    const resolvedCount = anomalyReports.filter(r => r.status === "resolved").length;
+
+    return (
+      <div className="space-y-6">
+        {/* Summary Cards */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">전체 보고서</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{anomalyReports.length}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-red-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-red-600">접수</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">{openCount}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-yellow-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-yellow-600">처리중</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600">{inProgressCount}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-green-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-green-600">완료</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{resolvedCount}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              설비이상보고서
+            </CardTitle>
+            <Button onClick={() => setShowAnomalyForm(!showAnomalyForm)}>
+              <Plus className="mr-2 h-4 w-4" />
+              이상 보고
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {/* Filter Section */}
+            <div className="mb-6 flex gap-4">
+              <div className="space-y-2">
+                <Label>상태</Label>
+                <Select value={selectedReportStatus} onValueChange={setSelectedReportStatus}>
+                  <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체</SelectItem>
+                    <SelectItem value="open">접수</SelectItem>
+                    <SelectItem value="in-progress">처리중</SelectItem>
+                    <SelectItem value="resolved">완료</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {showAnomalyForm && (
+              <div className="mb-6 p-4 border rounded-lg bg-muted/30">
+                <h4 className="font-medium mb-4">설비이상보고서 작성</h4>
+                <div className="grid gap-4 md:grid-cols-3 mb-4">
+                  <div className="space-y-2">
+                    <Label>이상 발생일 *</Label>
+                    <Input
+                      type="date"
+                      value={newAnomaly.reportDate}
+                      onChange={(e) => setNewAnomaly({ ...newAnomaly, reportDate: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>발생시간 *</Label>
+                    <Input
+                      type="time"
+                      value={newAnomaly.reportTime}
+                      onChange={(e) => setNewAnomaly({ ...newAnomaly, reportTime: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>설비명 *</Label>
+                    <Select value={newAnomaly.equipmentId} onValueChange={handleEquipmentSelect}>
+                      <SelectTrigger><SelectValue placeholder="설비 선택" /></SelectTrigger>
+                      <SelectContent>
+                        {equipments.map((eq) => (
+                          <SelectItem key={eq.id} value={eq.id}>{eq.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>이상내용 *</Label>
+                    <Textarea
+                      value={newAnomaly.anomalyDescription}
+                      onChange={(e) => setNewAnomaly({ ...newAnomaly, anomalyDescription: e.target.value })}
+                      placeholder="발생한 이상 현상을 상세히 기록하세요"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>응급조치</Label>
+                    <Textarea
+                      value={newAnomaly.emergencyAction}
+                      onChange={(e) => setNewAnomaly({ ...newAnomaly, emergencyAction: e.target.value })}
+                      placeholder="현장에서 취한 응급조치 내용"
+                      rows={2}
+                    />
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>근본원인</Label>
+                      <Textarea
+                        value={newAnomaly.rootCause}
+                        onChange={(e) => setNewAnomaly({ ...newAnomaly, rootCause: e.target.value })}
+                        placeholder="이상 발생의 근본 원인 (분석 후 기록)"
+                        rows={2}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>영구대책</Label>
+                      <Textarea
+                        value={newAnomaly.permanentSolution}
+                        onChange={(e) => setNewAnomaly({ ...newAnomaly, permanentSolution: e.target.value })}
+                        placeholder="재발 방지를 위한 영구적 대책"
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>보고자 *</Label>
+                      <Input
+                        value={newAnomaly.reporter}
+                        onChange={(e) => setNewAnomaly({ ...newAnomaly, reporter: e.target.value })}
+                        placeholder="보고자명"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>처리상태</Label>
+                      <Select
+                        value={newAnomaly.status}
+                        onValueChange={(v) => setNewAnomaly({ ...newAnomaly, status: v as AnomalyReport["status"] })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="open">접수</SelectItem>
+                          <SelectItem value="in-progress">처리중</SelectItem>
+                          <SelectItem value="resolved">완료</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setShowAnomalyForm(false)}>취소</Button>
+                  <Button onClick={handleAddAnomaly}><Save className="mr-2 h-4 w-4" />저장</Button>
+                </div>
+              </div>
+            )}
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>발생일시</TableHead>
+                  <TableHead>설비명</TableHead>
+                  <TableHead>이상내용</TableHead>
+                  <TableHead>응급조치</TableHead>
+                  <TableHead>근본원인</TableHead>
+                  <TableHead>영구대책</TableHead>
+                  <TableHead>보고자</TableHead>
+                  <TableHead className="text-center">상태</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredReports.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      등록된 이상보고서가 없습니다.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredReports.map((report) => (
+                    <TableRow key={report.id}>
+                      <TableCell className="whitespace-nowrap">
+                        {report.reportDate}<br />
+                        <span className="text-muted-foreground text-sm">{report.reportTime}</span>
+                      </TableCell>
+                      <TableCell className="font-medium">{report.equipmentName}</TableCell>
+                      <TableCell className="max-w-[200px]">
+                        <div className="truncate" title={report.anomalyDescription}>
+                          {report.anomalyDescription}
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-[150px]">
+                        <div className="truncate" title={report.emergencyAction}>
+                          {report.emergencyAction || "-"}
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-[150px]">
+                        <div className="truncate" title={report.rootCause}>
+                          {report.rootCause || "-"}
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-[150px]">
+                        <div className="truncate" title={report.permanentSolution}>
+                          {report.permanentSolution || "-"}
+                        </div>
+                      </TableCell>
+                      <TableCell>{report.reporter}</TableCell>
+                      <TableCell className="text-center">
+                        <Select
+                          value={report.status}
+                          onValueChange={(v) => handleUpdateStatus(report.id, v as AnomalyReport["status"])}
+                        >
+                          <SelectTrigger className="w-[100px]">
+                            <Badge variant={getStatusVariant(report.status)}>
+                              {getStatusLabel(report.status)}
+                            </Badge>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="open">접수</SelectItem>
+                            <SelectItem value="in-progress">처리중</SelectItem>
+                            <SelectItem value="resolved">완료</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>

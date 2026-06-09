@@ -27,48 +27,48 @@ import {
   Plus,
   ClipboardCheck,
   TrendingUp,
-  FileText,
-  History,
+  MapPin,
   Save,
-  CheckCircle,
-  AlertTriangle,
+  Trash2,
+  Edit2,
+  FileText,
 } from "lucide-react";
 
-// 5S 평가항목 정의
-const fiveSCategories = [
+// 3정5행 평가항목 정의 (3정: 정리, 정돈, 청소 / 5행: 정리, 정돈, 청소, 청결, 습관화)
+const evaluationItems = [
   {
-    id: "seiri",
-    name: "정리 (Sort)",
+    id: "jeongri",
+    name: "정리",
     description: "불필요한 물건 제거",
     criteria: "불필요한 물품이 제거되고, 필요한 물품만 보관되어 있는가?",
   },
   {
-    id: "seiton",
-    name: "정돈 (Set in Order)",
-    description: "물건의 정위치",
+    id: "jeongdon",
+    name: "정돈",
+    description: "물건의 정위치 관리",
     criteria: "물품이 정해진 위치에 정돈되어 있고, 쉽게 찾을 수 있는가?",
   },
   {
-    id: "seiso",
-    name: "청소 (Shine)",
-    description: "청결상태",
+    id: "cheongso",
+    name: "청소",
+    description: "작업장 청결 유지",
     criteria: "작업 구역이 깨끗하게 청소되어 있고, 오염원이 제거되어 있는가?",
   },
   {
-    id: "seiketsu",
-    name: "청결 (Standardize)",
-    description: "표준화 준수",
-    criteria: "5S 표준이 문서화되어 있고, 일관되게 준수되고 있는가?",
+    id: "cheonggyeol",
+    name: "청결",
+    description: "표준화 및 상태 유지",
+    criteria: "3정 상태가 표준화되어 있고, 일관되게 유지되고 있는가?",
   },
   {
-    id: "shitsuke",
-    name: "습관화 (Sustain)",
-    description: "지속적 실천",
-    criteria: "5S 활동이 일상화되어 있고, 지속적으로 개선되고 있는가?",
+    id: "seupgwanhwa",
+    name: "습관화",
+    description: "지속적 실천 및 개선",
+    criteria: "5행 활동이 일상화되어 있고, 지속적으로 개선되고 있는가?",
   },
 ];
 
-// 평가기준
+// 평가기준 점수
 const scoreDescriptions: Record<number, string> = {
   5: "매우 우수",
   4: "우수",
@@ -85,284 +85,366 @@ const getGrade = (average: number): { grade: string; color: string } => {
   return { grade: "D", color: "text-red-600" };
 };
 
-// 구역 목록
-const areas = [
-  "생산라인 A",
-  "생산라인 B",
-  "생산라인 C",
-  "원자재 창고",
-  "완제품 창고",
-  "사무실",
-  "휴게실",
-  "정비실",
+// 부서/구역 목록
+const initialDepartments = [
+  { id: "1", name: "생산1팀", area: "생산라인 A구역", manager: "김철수" },
+  { id: "2", name: "생산2팀", area: "생산라인 B구역", manager: "이영희" },
+  { id: "3", name: "품질관리팀", area: "검사실", manager: "박민수" },
+  { id: "4", name: "물류팀", area: "원자재 창고", manager: "정대리" },
+  { id: "5", name: "물류팀", area: "완제품 창고", manager: "최과장" },
+  { id: "6", name: "관리팀", area: "사무실", manager: "한부장" },
+  { id: "7", name: "정비팀", area: "정비실", manager: "오기사" },
+  { id: "8", name: "공용", area: "휴게실", manager: "김대리" },
 ];
 
-interface FiveSScore {
-  seiri: number;
-  seiton: number;
-  seiso: number;
-  seiketsu: number;
-  shitsuke: number;
+interface EvaluationScores {
+  jeongri: number;
+  jeongdon: number;
+  cheongso: number;
+  cheonggyeol: number;
+  seupgwanhwa: number;
 }
 
-interface Evaluation {
+interface MonthlyEvaluation {
   id: string;
-  evaluationNo: string;
-  evaluationDate: string;
-  area: string;
-  evaluator: string;
-  scores: FiveSScore;
+  yearMonth: string; // YYYY-MM format
+  departmentId: string;
+  departmentName: string;
+  areaName: string;
+  scores: EvaluationScores;
   totalScore: number;
   average: number;
   grade: string;
-  findings: string;
-  improvements: string;
-  status: "완료" | "개선중" | "개선완료";
+  evaluator: string;
+  evaluationDate: string;
+  remarks: string;
 }
 
-interface Improvement {
+interface ImprovementAction {
   id: string;
   evaluationId: string;
-  evaluationNo: string;
-  area: string;
-  category: string;
-  issue: string;
-  action: string;
-  responsible: string;
-  dueDate: string;
-  completedDate: string;
+  yearMonth: string;
+  departmentName: string;
+  areaName: string;
+  issue: string; // 지적사항
+  action: string; // 개선대책
+  responsible: string; // 담당자
+  dueDate: string; // 완료예정일
+  completedDate: string; // 완료일
+  result: string; // 조치결과
   status: "대기" | "진행중" | "완료" | "지연";
 }
 
-// 초기 데이터
-const initialEvaluations: Evaluation[] = [
+interface AreaDefinition {
+  id: string;
+  departmentName: string;
+  areaName: string;
+  manager: string;
+  description: string;
+}
+
+// 초기 월간 평가 데이터
+const initialEvaluations: MonthlyEvaluation[] = [
   {
     id: "1",
-    evaluationNo: "5S-2026-001",
-    evaluationDate: "2026-06-01",
-    area: "생산라인 A",
-    evaluator: "김관리",
-    scores: { seiri: 5, seiton: 4, seiso: 5, seiketsu: 4, shitsuke: 4 },
+    yearMonth: "2026-06",
+    departmentId: "1",
+    departmentName: "생산1팀",
+    areaName: "생산라인 A구역",
+    scores: { jeongri: 5, jeongdon: 4, cheongso: 5, cheonggyeol: 4, seupgwanhwa: 4 },
     totalScore: 22,
     average: 4.4,
     grade: "B",
-    findings: "전반적으로 양호하나 표준 문서화 보완 필요",
-    improvements: "",
-    status: "완료",
+    evaluator: "김관리",
+    evaluationDate: "2026-06-05",
+    remarks: "전반적으로 양호하나 표준 문서화 보완 필요",
   },
   {
     id: "2",
-    evaluationNo: "5S-2026-002",
-    evaluationDate: "2026-06-01",
-    area: "생산라인 B",
-    evaluator: "이점검",
-    scores: { seiri: 3, seiton: 2, seiso: 3, seiketsu: 3, shitsuke: 2 },
+    yearMonth: "2026-06",
+    departmentId: "2",
+    departmentName: "생산2팀",
+    areaName: "생산라인 B구역",
+    scores: { jeongri: 3, jeongdon: 2, cheongso: 3, cheonggyeol: 3, seupgwanhwa: 2 },
     totalScore: 13,
     average: 2.6,
     grade: "C",
-    findings: "불용품 적치 및 정돈 미흡, 청소 상태 개선 필요",
-    improvements: "불용품 폐기 및 정리정돈 개선 활동 시행",
-    status: "개선중",
+    evaluator: "이점검",
+    evaluationDate: "2026-06-05",
+    remarks: "불용품 적치 및 정돈 미흡, 청소 상태 개선 필요",
   },
   {
     id: "3",
-    evaluationNo: "5S-2026-003",
-    evaluationDate: "2026-05-15",
-    area: "원자재 창고",
-    evaluator: "박평가",
-    scores: { seiri: 4, seiton: 4, seiso: 4, seiketsu: 3, shitsuke: 3 },
+    yearMonth: "2026-05",
+    departmentId: "1",
+    departmentName: "생산1팀",
+    areaName: "생산라인 A구역",
+    scores: { jeongri: 4, jeongdon: 4, cheongso: 4, cheonggyeol: 3, seupgwanhwa: 3 },
     totalScore: 18,
     average: 3.6,
     grade: "B",
-    findings: "선입선출 표시 및 표준화 보완 필요",
-    improvements: "선입선출 표시판 설치 완료",
-    status: "개선완료",
+    evaluator: "김관리",
+    evaluationDate: "2026-05-10",
+    remarks: "선입선출 표시 및 표준화 보완 필요",
+  },
+  {
+    id: "4",
+    yearMonth: "2026-05",
+    departmentId: "2",
+    departmentName: "생산2팀",
+    areaName: "생산라인 B구역",
+    scores: { jeongri: 3, jeongdon: 3, cheongso: 3, cheonggyeol: 2, seupgwanhwa: 2 },
+    totalScore: 13,
+    average: 2.6,
+    grade: "C",
+    evaluator: "이점검",
+    evaluationDate: "2026-05-10",
+    remarks: "청결 유지 미흡",
+  },
+  {
+    id: "5",
+    yearMonth: "2026-04",
+    departmentId: "1",
+    departmentName: "생산1팀",
+    areaName: "생산라인 A구역",
+    scores: { jeongri: 4, jeongdon: 3, cheongso: 4, cheonggyeol: 3, seupgwanhwa: 3 },
+    totalScore: 17,
+    average: 3.4,
+    grade: "C",
+    evaluator: "김관리",
+    evaluationDate: "2026-04-08",
+    remarks: "정돈 상태 개선 필요",
+  },
+  {
+    id: "6",
+    yearMonth: "2026-04",
+    departmentId: "2",
+    departmentName: "생산2팀",
+    areaName: "생산라인 B구역",
+    scores: { jeongri: 2, jeongdon: 2, cheongso: 3, cheonggyeol: 2, seupgwanhwa: 2 },
+    totalScore: 11,
+    average: 2.2,
+    grade: "D",
+    evaluator: "이점검",
+    evaluationDate: "2026-04-08",
+    remarks: "전체적인 개선 필요",
   },
 ];
 
-const initialImprovements: Improvement[] = [
+// 초기 개선대책 데이터
+const initialImprovements: ImprovementAction[] = [
   {
     id: "1",
     evaluationId: "2",
-    evaluationNo: "5S-2026-002",
-    area: "생산라인 B",
-    category: "정돈",
-    issue: "공구 정위치 미준수",
-    action: "공구 보관함 정리 및 라벨링",
+    yearMonth: "2026-06",
+    departmentName: "생산2팀",
+    areaName: "생산라인 B구역",
+    issue: "공구 정위치 미준수로 작업 효율 저하",
+    action: "공구 보관함 정리 및 라벨링 작업 시행",
     responsible: "김정돈",
-    dueDate: "2026-06-15",
+    dueDate: "2026-06-20",
     completedDate: "",
+    result: "",
     status: "진행중",
   },
   {
     id: "2",
     evaluationId: "2",
-    evaluationNo: "5S-2026-002",
-    area: "생산라인 B",
-    category: "정리",
-    issue: "불용품 적치",
-    action: "불용품 분류 및 폐기",
+    yearMonth: "2026-06",
+    departmentName: "생산2팀",
+    areaName: "생산라인 B구역",
+    issue: "불용품 적치로 통로 확보 미흡",
+    action: "불용품 분류 및 폐기 처리",
     responsible: "이정리",
-    dueDate: "2026-06-10",
+    dueDate: "2026-06-15",
     completedDate: "",
+    result: "",
     status: "진행중",
   },
   {
     id: "3",
     evaluationId: "3",
-    evaluationNo: "5S-2026-003",
-    area: "원자재 창고",
-    category: "청결",
+    yearMonth: "2026-05",
+    departmentName: "생산1팀",
+    areaName: "생산라인 A구역",
     issue: "선입선출 표시 미흡",
     action: "선입선출 표시판 설치",
     responsible: "박청결",
     dueDate: "2026-06-01",
     completedDate: "2026-05-30",
+    result: "선입선출 표시판 설치 완료, 관리 기준서 개정",
     status: "완료",
   },
 ];
 
-// 점검번호 생성
-const generateEvaluationNo = (evaluations: Evaluation[]): string => {
-  const year = new Date().getFullYear();
-  const count = evaluations.filter((e) =>
-    e.evaluationNo.includes(`5S-${year}`)
-  ).length;
-  return `5S-${year}-${String(count + 1).padStart(3, "0")}`;
+// 초기 구역 정의 데이터
+const initialAreaDefinitions: AreaDefinition[] = initialDepartments.map((dept) => ({
+  id: dept.id,
+  departmentName: dept.name,
+  areaName: dept.area,
+  manager: dept.manager,
+  description: "",
+}));
+
+// 년월 선택을 위한 옵션 생성
+const getYearMonthOptions = () => {
+  const options: string[] = [];
+  const now = new Date();
+  for (let i = 0; i < 12; i++) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    options.push(yearMonth);
+  }
+  return options;
 };
 
 export default function HousekeepingEvaluationPage() {
-  const [activeTab, setActiveTab] = useState("input");
-  const [evaluations, setEvaluations] = useState<Evaluation[]>(initialEvaluations);
-  const [improvements, setImprovements] = useState<Improvement[]>(initialImprovements);
-  const [selectedEvaluation, setSelectedEvaluation] = useState<Evaluation | null>(null);
+  const [activeTab, setActiveTab] = useState("monthly-evaluation");
+  const [evaluations, setEvaluations] = useState<MonthlyEvaluation[]>(initialEvaluations);
+  const [improvements, setImprovements] = useState<ImprovementAction[]>(initialImprovements);
+  const [areaDefinitions, setAreaDefinitions] = useState<AreaDefinition[]>(initialAreaDefinitions);
 
-  // 신규 평가 입력 폼 상태
-  const [formData, setFormData] = useState({
-    evaluationDate: new Date().toISOString().split("T")[0],
-    area: "",
-    evaluator: "",
-    scores: {
-      seiri: 0,
-      seiton: 0,
-      seiso: 0,
-      seiketsu: 0,
-      shitsuke: 0,
-    } as FiveSScore,
-    findings: "",
-    improvements: "",
+  // 탭1: 월간 평가 입력 폼 상태
+  const [selectedYearMonth, setSelectedYearMonth] = useState(
+    `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`
+  );
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [evaluator, setEvaluator] = useState("");
+  const [evaluationDate, setEvaluationDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [scores, setScores] = useState<EvaluationScores>({
+    jeongri: 0,
+    jeongdon: 0,
+    cheongso: 0,
+    cheonggyeol: 0,
+    seupgwanhwa: 0,
   });
+  const [remarks, setRemarks] = useState("");
 
-  // 개선 등록 폼 상태
+  // 탭2: 개선대책 입력 폼 상태
   const [improvementForm, setImprovementForm] = useState({
     evaluationId: "",
-    category: "",
     issue: "",
     action: "",
     responsible: "",
     dueDate: "",
+    result: "",
   });
 
-  const calculateTotalAndAverage = (scores: FiveSScore) => {
-    const total = Object.values(scores).reduce((sum, score) => sum + score, 0);
+  // 탭3: 추이 분석을 위한 필터
+  const [trendYearMonth, setTrendYearMonth] = useState("");
+
+  // 탭4: 구역 편집 상태
+  const [editingAreaId, setEditingAreaId] = useState<string | null>(null);
+  const [newAreaForm, setNewAreaForm] = useState({
+    departmentName: "",
+    areaName: "",
+    manager: "",
+    description: "",
+  });
+
+  // 점수 계산 함수
+  const calculateTotalAndAverage = (s: EvaluationScores) => {
+    const total = Object.values(s).reduce((sum, score) => sum + score, 0);
     const average = total / 5;
     return { total, average: Math.round(average * 10) / 10 };
   };
 
-  const handleScoreChange = (category: keyof FiveSScore, value: number) => {
-    setFormData((prev) => ({
+  const handleScoreChange = (category: keyof EvaluationScores, value: number) => {
+    setScores((prev) => ({
       ...prev,
-      scores: {
-        ...prev.scores,
-        [category]: value,
-      },
+      [category]: value,
     }));
   };
 
-  const handleSubmitEvaluation = () => {
-    if (!formData.area || !formData.evaluator) {
-      alert("점검구역과 점검자를 입력해주세요.");
+  // 탭1: 월간 평가 저장
+  const handleSaveEvaluation = () => {
+    if (!selectedYearMonth || !selectedDepartment || !evaluator) {
+      alert("평가년월, 평가구역/부서, 평가자를 입력해주세요.");
       return;
     }
 
-    const allScoresEntered = Object.values(formData.scores).every(
-      (score) => score > 0
-    );
+    const allScoresEntered = Object.values(scores).every((score) => score > 0);
     if (!allScoresEntered) {
       alert("모든 평가항목에 점수를 입력해주세요.");
       return;
     }
 
-    const { total, average } = calculateTotalAndAverage(formData.scores);
+    const dept = areaDefinitions.find((d) => d.id === selectedDepartment);
+    if (!dept) return;
+
+    const { total, average } = calculateTotalAndAverage(scores);
     const { grade } = getGrade(average);
 
-    const newEvaluation: Evaluation = {
-      id: String(Date.now()),
-      evaluationNo: generateEvaluationNo(evaluations),
-      evaluationDate: formData.evaluationDate,
-      area: formData.area,
-      evaluator: formData.evaluator,
-      scores: { ...formData.scores },
+    // 기존 평가 확인 (같은 년월, 같은 구역)
+    const existingIndex = evaluations.findIndex(
+      (e) => e.yearMonth === selectedYearMonth && e.departmentId === selectedDepartment
+    );
+
+    const newEvaluation: MonthlyEvaluation = {
+      id: existingIndex >= 0 ? evaluations[existingIndex].id : String(Date.now()),
+      yearMonth: selectedYearMonth,
+      departmentId: selectedDepartment,
+      departmentName: dept.departmentName,
+      areaName: dept.areaName,
+      scores: { ...scores },
       totalScore: total,
       average,
       grade,
-      findings: formData.findings,
-      improvements: formData.improvements,
-      status: average >= 3.5 ? "완료" : "개선중",
+      evaluator,
+      evaluationDate,
+      remarks,
     };
 
-    setEvaluations((prev) => [newEvaluation, ...prev]);
-    setSelectedEvaluation(newEvaluation);
+    if (existingIndex >= 0) {
+      setEvaluations((prev) =>
+        prev.map((e, idx) => (idx === existingIndex ? newEvaluation : e))
+      );
+    } else {
+      setEvaluations((prev) => [newEvaluation, ...prev]);
+    }
 
     // 폼 초기화
-    setFormData({
-      evaluationDate: new Date().toISOString().split("T")[0],
-      area: "",
-      evaluator: "",
-      scores: {
-        seiri: 0,
-        seiton: 0,
-        seiso: 0,
-        seiketsu: 0,
-        shitsuke: 0,
-      },
-      findings: "",
-      improvements: "",
+    setScores({
+      jeongri: 0,
+      jeongdon: 0,
+      cheongso: 0,
+      cheonggyeol: 0,
+      seupgwanhwa: 0,
     });
-
-    // 결과 탭으로 이동
-    setActiveTab("result");
+    setRemarks("");
+    alert("평가가 저장되었습니다.");
   };
 
+  // 탭2: 개선대책 추가
   const handleAddImprovement = () => {
     if (
       !improvementForm.evaluationId ||
-      !improvementForm.category ||
       !improvementForm.issue ||
       !improvementForm.action ||
       !improvementForm.responsible ||
       !improvementForm.dueDate
     ) {
-      alert("모든 필드를 입력해주세요.");
+      alert("필수 항목을 모두 입력해주세요.");
       return;
     }
 
-    const evaluation = evaluations.find(
-      (e) => e.id === improvementForm.evaluationId
-    );
+    const evaluation = evaluations.find((e) => e.id === improvementForm.evaluationId);
     if (!evaluation) return;
 
-    const newImprovement: Improvement = {
+    const newImprovement: ImprovementAction = {
       id: String(Date.now()),
       evaluationId: improvementForm.evaluationId,
-      evaluationNo: evaluation.evaluationNo,
-      area: evaluation.area,
-      category: improvementForm.category,
+      yearMonth: evaluation.yearMonth,
+      departmentName: evaluation.departmentName,
+      areaName: evaluation.areaName,
       issue: improvementForm.issue,
       action: improvementForm.action,
       responsible: improvementForm.responsible,
       dueDate: improvementForm.dueDate,
       completedDate: "",
+      result: improvementForm.result,
       status: "대기",
     };
 
@@ -371,17 +453,18 @@ export default function HousekeepingEvaluationPage() {
     // 폼 초기화
     setImprovementForm({
       evaluationId: "",
-      category: "",
       issue: "",
       action: "",
       responsible: "",
       dueDate: "",
+      result: "",
     });
   };
 
   const handleUpdateImprovementStatus = (
     id: string,
-    status: Improvement["status"]
+    status: ImprovementAction["status"],
+    result?: string
   ) => {
     setImprovements((prev) =>
       prev.map((imp) => {
@@ -390,21 +473,57 @@ export default function HousekeepingEvaluationPage() {
           ...imp,
           status,
           completedDate: status === "완료" ? new Date().toISOString().split("T")[0] : imp.completedDate,
+          result: result !== undefined ? result : imp.result,
         };
       })
     );
   };
 
+  // 탭4: 구역 추가
+  const handleAddArea = () => {
+    if (!newAreaForm.departmentName || !newAreaForm.areaName || !newAreaForm.manager) {
+      alert("부서명, 구역명, 담당자를 입력해주세요.");
+      return;
+    }
+
+    const newArea: AreaDefinition = {
+      id: String(Date.now()),
+      departmentName: newAreaForm.departmentName,
+      areaName: newAreaForm.areaName,
+      manager: newAreaForm.manager,
+      description: newAreaForm.description,
+    };
+
+    setAreaDefinitions((prev) => [...prev, newArea]);
+    setNewAreaForm({ departmentName: "", areaName: "", manager: "", description: "" });
+  };
+
+  const handleUpdateArea = (id: string, updates: Partial<AreaDefinition>) => {
+    setAreaDefinitions((prev) =>
+      prev.map((area) => (area.id === id ? { ...area, ...updates } : area))
+    );
+  };
+
+  const handleDeleteArea = (id: string) => {
+    if (confirm("이 구역을 삭제하시겠습니까?")) {
+      setAreaDefinitions((prev) => prev.filter((area) => area.id !== id));
+    }
+  };
+
+  // 유틸리티 함수
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "-";
     return new Date(dateStr).toLocaleDateString("ko-KR");
   };
 
+  const formatYearMonth = (yearMonth: string) => {
+    const [year, month] = yearMonth.split("-");
+    return `${year}년 ${parseInt(month)}월`;
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "success" | "warning" | "error"> = {
       완료: "success",
-      개선완료: "success",
-      개선중: "warning",
       대기: "secondary",
       진행중: "warning",
       지연: "error",
@@ -420,164 +539,184 @@ export default function HousekeepingEvaluationPage() {
       D: "bg-red-100 text-red-800",
     };
     return (
-      <span
-        className={`px-3 py-1 rounded-full text-sm font-bold ${colors[grade] || "bg-gray-100"}`}
-      >
+      <span className={`px-3 py-1 rounded-full text-sm font-bold ${colors[grade] || "bg-gray-100"}`}>
         {grade}등급
       </span>
     );
   };
 
-  // 이력 데이터 (구역별 평균 추이)
-  const getAreaTrends = () => {
-    const trends: Record<
+  // 현재 폼 점수 계산
+  const currentFormStats = calculateTotalAndAverage(scores);
+  const currentFormGrade = getGrade(currentFormStats.average);
+
+  // 월별 추이 데이터 계산
+  const getMonthlyTrendData = () => {
+    const trendData: Record<
       string,
-      { evaluations: Evaluation[]; avgScore: number }
+      Record<string, { average: number; grade: string }>
     > = {};
 
+    // 최근 6개월 데이터 추출
+    const months = getYearMonthOptions().slice(0, 6).reverse();
+
+    months.forEach((month) => {
+      trendData[month] = {};
+    });
+
     evaluations.forEach((evaluation) => {
-      if (!trends[evaluation.area]) {
-        trends[evaluation.area] = { evaluations: [], avgScore: 0 };
+      if (trendData[evaluation.yearMonth]) {
+        trendData[evaluation.yearMonth][evaluation.departmentName] = {
+          average: evaluation.average,
+          grade: evaluation.grade,
+        };
       }
-      trends[evaluation.area].evaluations.push(evaluation);
     });
 
-    Object.keys(trends).forEach((area) => {
-      const evals = trends[area].evaluations;
-      const totalAvg = evals.reduce((sum, e) => sum + e.average, 0);
-      trends[area].avgScore =
-        evals.length > 0 ? Math.round((totalAvg / evals.length) * 10) / 10 : 0;
-    });
-
-    return trends;
+    return { months, trendData };
   };
 
-  const areaTrends = getAreaTrends();
+  const { months: trendMonths, trendData } = getMonthlyTrendData();
 
-  // 현재 폼 점수 계산
-  const currentFormStats = calculateTotalAndAverage(formData.scores);
-  const currentFormGrade = getGrade(currentFormStats.average);
+  // 부서별 평균 점수 계산
+  const getDepartmentAverages = () => {
+    const deptData: Record<string, { total: number; count: number }> = {};
+
+    evaluations.forEach((evaluation) => {
+      if (!deptData[evaluation.departmentName]) {
+        deptData[evaluation.departmentName] = { total: 0, count: 0 };
+      }
+      deptData[evaluation.departmentName].total += evaluation.average;
+      deptData[evaluation.departmentName].count += 1;
+    });
+
+    return Object.entries(deptData).map(([dept, data]) => ({
+      department: dept,
+      average: Math.round((data.total / data.count) * 10) / 10,
+      count: data.count,
+    }));
+  };
+
+  const departmentAverages = getDepartmentAverages();
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">5S 점검 평가</h1>
+          <h1 className="text-3xl font-bold">3정5행 평가 및 개선대책</h1>
           <p className="text-muted-foreground">
-            5S (정리, 정돈, 청소, 청결, 습관화) 평가 및 개선활동 관리
+            월간 3정5행 평가 및 개선활동 관리 (정리, 정돈, 청소, 청결, 습관화)
           </p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="input">
+          <TabsTrigger value="monthly-evaluation">
             <ClipboardCheck className="mr-2 h-4 w-4" />
-            점검 입력
-          </TabsTrigger>
-          <TabsTrigger value="result">
-            <FileText className="mr-2 h-4 w-4" />
-            평가 결과
+            월간 3정5행 평가
           </TabsTrigger>
           <TabsTrigger value="improvement">
-            <AlertTriangle className="mr-2 h-4 w-4" />
-            개선 관리
+            <FileText className="mr-2 h-4 w-4" />
+            개선대책 입력
           </TabsTrigger>
-          <TabsTrigger value="history">
-            <History className="mr-2 h-4 w-4" />
-            점검 이력
+          <TabsTrigger value="trend">
+            <TrendingUp className="mr-2 h-4 w-4" />
+            월별 추이
+          </TabsTrigger>
+          <TabsTrigger value="area-management">
+            <MapPin className="mr-2 h-4 w-4" />
+            구역도 관리
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab 1: 점검 입력 */}
-        <TabsContent value="input">
+        {/* Tab 1: 월간 3정5행 평가 */}
+        <TabsContent value="monthly-evaluation">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* 기본 정보 입력 */}
+            {/* 평가 입력 폼 */}
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ClipboardCheck className="h-5 w-5" />
-                  5S 점검 입력
+                  월간 3정5행 평가 입력
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* 헤더 정보 */}
+                {/* 기본 정보 */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
                   <div className="space-y-2">
-                    <Label htmlFor="evaluationNo">점검번호</Label>
-                    <Input
-                      id="evaluationNo"
-                      value={generateEvaluationNo(evaluations)}
-                      disabled
-                      className="bg-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="evaluationDate">점검일</Label>
-                    <Input
-                      id="evaluationDate"
-                      type="date"
-                      value={formData.evaluationDate}
-                      onChange={(e) =>
-                        setFormData({ ...formData, evaluationDate: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="area">점검구역</Label>
-                    <Select
-                      value={formData.area}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, area: value })
-                      }
-                    >
+                    <Label htmlFor="yearMonth">평가년월</Label>
+                    <Select value={selectedYearMonth} onValueChange={setSelectedYearMonth}>
                       <SelectTrigger>
-                        <SelectValue placeholder="구역 선택" />
+                        <SelectValue placeholder="년월 선택" />
                       </SelectTrigger>
                       <SelectContent>
-                        {areas.map((area) => (
-                          <SelectItem key={area} value={area}>
-                            {area}
+                        {getYearMonthOptions().map((ym) => (
+                          <SelectItem key={ym} value={ym}>
+                            {formatYearMonth(ym)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="evaluator">점검자</Label>
+                    <Label htmlFor="department">평가구역/부서</Label>
+                    <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="구역 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {areaDefinitions.map((area) => (
+                          <SelectItem key={area.id} value={area.id}>
+                            {area.departmentName} - {area.areaName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="evaluationDate">평가일</Label>
+                    <Input
+                      id="evaluationDate"
+                      type="date"
+                      value={evaluationDate}
+                      onChange={(e) => setEvaluationDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="evaluator">평가자</Label>
                     <Input
                       id="evaluator"
-                      value={formData.evaluator}
-                      onChange={(e) =>
-                        setFormData({ ...formData, evaluator: e.target.value })
-                      }
-                      placeholder="점검자명"
+                      value={evaluator}
+                      onChange={(e) => setEvaluator(e.target.value)}
+                      placeholder="평가자명"
                     />
                   </div>
                 </div>
 
-                {/* 5S 평가항목 */}
+                {/* 평가항목 (5개 항목, 각 1-5점) */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">5S 평가항목 (각 5점 만점)</h3>
+                  <h3 className="font-semibold text-lg">
+                    평가항목 (정리, 정돈, 청소, 청결, 습관화) - 각 5점 만점
+                  </h3>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[200px]">평가항목</TableHead>
+                        <TableHead className="w-[150px]">평가항목</TableHead>
                         <TableHead>평가기준</TableHead>
-                        <TableHead className="w-[300px]">점수</TableHead>
+                        <TableHead className="w-[280px]">항목별 점수 (1-5점)</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {fiveSCategories.map((category) => (
-                        <TableRow key={category.id}>
+                      {evaluationItems.map((item) => (
+                        <TableRow key={item.id}>
                           <TableCell>
-                            <div className="font-medium">{category.name}</div>
+                            <div className="font-medium">{item.name}</div>
                             <div className="text-sm text-muted-foreground">
-                              {category.description}
+                              {item.description}
                             </div>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {category.criteria}
+                            {item.criteria}
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
@@ -586,18 +725,14 @@ export default function HousekeepingEvaluationPage() {
                                   key={score}
                                   type="button"
                                   variant={
-                                    formData.scores[category.id as keyof FiveSScore] ===
-                                    score
+                                    scores[item.id as keyof EvaluationScores] === score
                                       ? "default"
                                       : "outline"
                                   }
                                   size="sm"
                                   className="w-10"
                                   onClick={() =>
-                                    handleScoreChange(
-                                      category.id as keyof FiveSScore,
-                                      score
-                                    )
+                                    handleScoreChange(item.id as keyof EvaluationScores, score)
                                   }
                                 >
                                   {score}
@@ -605,10 +740,8 @@ export default function HousekeepingEvaluationPage() {
                               ))}
                             </div>
                             <div className="text-xs text-muted-foreground mt-1">
-                              {formData.scores[category.id as keyof FiveSScore] > 0 &&
-                                scoreDescriptions[
-                                  formData.scores[category.id as keyof FiveSScore]
-                                ]}
+                              {scores[item.id as keyof EvaluationScores] > 0 &&
+                                scoreDescriptions[scores[item.id as keyof EvaluationScores]]}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -617,36 +750,20 @@ export default function HousekeepingEvaluationPage() {
                   </Table>
                 </div>
 
-                {/* 평가 결과 및 의견 */}
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="findings">평가결과/지적사항</Label>
-                    <Textarea
-                      id="findings"
-                      value={formData.findings}
-                      onChange={(e) =>
-                        setFormData({ ...formData, findings: e.target.value })
-                      }
-                      placeholder="평가 결과 및 지적사항을 입력하세요"
-                      rows={2}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="improvements">개선필요사항</Label>
-                    <Textarea
-                      id="improvements"
-                      value={formData.improvements}
-                      onChange={(e) =>
-                        setFormData({ ...formData, improvements: e.target.value })
-                      }
-                      placeholder="개선이 필요한 사항을 입력하세요"
-                      rows={2}
-                    />
-                  </div>
+                {/* 비고 */}
+                <div className="space-y-2">
+                  <Label htmlFor="remarks">비고/특이사항</Label>
+                  <Textarea
+                    id="remarks"
+                    value={remarks}
+                    onChange={(e) => setRemarks(e.target.value)}
+                    placeholder="평가 결과에 대한 특이사항을 입력하세요"
+                    rows={2}
+                  />
                 </div>
 
                 <div className="flex justify-end">
-                  <Button onClick={handleSubmitEvaluation}>
+                  <Button onClick={handleSaveEvaluation}>
                     <Save className="mr-2 h-4 w-4" />
                     평가 저장
                   </Button>
@@ -654,7 +771,7 @@ export default function HousekeepingEvaluationPage() {
               </CardContent>
             </Card>
 
-            {/* 평가기준 및 현재 점수 요약 */}
+            {/* 점수 요약 및 등급 기준 */}
             <div className="space-y-6">
               <Card>
                 <CardHeader>
@@ -670,21 +787,18 @@ export default function HousekeepingEvaluationPage() {
                         평균: {currentFormStats.average}점
                       </div>
                       {currentFormStats.average > 0 && (
-                        <div className="mt-2">
-                          {getGradeBadge(currentFormGrade.grade)}
-                        </div>
+                        <div className="mt-2">{getGradeBadge(currentFormGrade.grade)}</div>
                       )}
                     </div>
                     <div className="space-y-2">
-                      {fiveSCategories.map((category) => {
-                        const score =
-                          formData.scores[category.id as keyof FiveSScore];
+                      {evaluationItems.map((item) => {
+                        const score = scores[item.id as keyof EvaluationScores];
                         return (
                           <div
-                            key={category.id}
+                            key={item.id}
                             className="flex justify-between items-center text-sm"
                           >
-                            <span>{category.name.split(" ")[0]}</span>
+                            <span>{item.name}</span>
                             <span
                               className={`font-medium ${
                                 score === 0
@@ -708,42 +822,21 @@ export default function HousekeepingEvaluationPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>평가기준</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm">
-                    {Object.entries(scoreDescriptions)
-                      .reverse()
-                      .map(([score, desc]) => (
-                        <div
-                          key={score}
-                          className="flex justify-between items-center"
-                        >
-                          <span className="font-medium">{score}점</span>
-                          <span className="text-muted-foreground">{desc}</span>
-                        </div>
-                      ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>등급 기준</CardTitle>
+                  <CardTitle>총점/등급 기준</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-green-600">A등급</span>
-                      <span>4.5점 이상</span>
+                      <span>4.5점 이상 (22.5점~)</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-blue-600">B등급</span>
-                      <span>3.5점 이상</span>
+                      <span>3.5점 이상 (17.5점~)</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-yellow-600">C등급</span>
-                      <span>2.5점 이상</span>
+                      <span>2.5점 이상 (12.5점~)</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-red-600">D등급</span>
@@ -752,189 +845,51 @@ export default function HousekeepingEvaluationPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* 최근 평가 목록 */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>최근 평가 현황</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {evaluations.slice(0, 5).map((evaluation) => (
+                      <div
+                        key={evaluation.id}
+                        className="flex justify-between items-center p-2 border rounded-lg text-sm"
+                      >
+                        <div>
+                          <div className="font-medium">{evaluation.areaName}</div>
+                          <div className="text-muted-foreground">
+                            {formatYearMonth(evaluation.yearMonth)}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold">{evaluation.average}점</div>
+                          {getGradeBadge(evaluation.grade)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </TabsContent>
 
-        {/* Tab 2: 평가 결과 */}
-        <TabsContent value="result">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* 평가 목록 */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>5S 평가 목록</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {evaluations.length === 0 ? (
-                  <p className="text-muted-foreground">등록된 평가가 없습니다.</p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>점검번호</TableHead>
-                        <TableHead>점검일</TableHead>
-                        <TableHead>점검구역</TableHead>
-                        <TableHead>점검자</TableHead>
-                        <TableHead className="text-center">총점</TableHead>
-                        <TableHead className="text-center">평균</TableHead>
-                        <TableHead className="text-center">등급</TableHead>
-                        <TableHead>상태</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {evaluations.map((evaluation) => (
-                        <TableRow
-                          key={evaluation.id}
-                          className={`cursor-pointer hover:bg-muted/50 ${
-                            selectedEvaluation?.id === evaluation.id
-                              ? "bg-muted"
-                              : ""
-                          }`}
-                          onClick={() => setSelectedEvaluation(evaluation)}
-                        >
-                          <TableCell className="font-medium">
-                            {evaluation.evaluationNo}
-                          </TableCell>
-                          <TableCell>
-                            {formatDate(evaluation.evaluationDate)}
-                          </TableCell>
-                          <TableCell>{evaluation.area}</TableCell>
-                          <TableCell>{evaluation.evaluator}</TableCell>
-                          <TableCell className="text-center font-semibold">
-                            {evaluation.totalScore}/25
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {evaluation.average}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getGradeBadge(evaluation.grade)}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(evaluation.status)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* 선택된 평가 상세 */}
-            <Card>
-              <CardHeader>
-                <CardTitle>평가 상세</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedEvaluation ? (
-                  <div className="space-y-4">
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <div className="text-3xl font-bold">
-                        {selectedEvaluation.totalScore}/25
-                      </div>
-                      <div className="text-lg text-muted-foreground">
-                        평균: {selectedEvaluation.average}점
-                      </div>
-                      <div className="mt-2">
-                        {getGradeBadge(selectedEvaluation.grade)}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">점검번호</span>
-                        <span className="font-medium">
-                          {selectedEvaluation.evaluationNo}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">점검일</span>
-                        <span>{formatDate(selectedEvaluation.evaluationDate)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">점검구역</span>
-                        <span>{selectedEvaluation.area}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">점검자</span>
-                        <span>{selectedEvaluation.evaluator}</span>
-                      </div>
-                    </div>
-
-                    <div className="border-t pt-4">
-                      <h4 className="font-medium mb-2">항목별 점수</h4>
-                      <div className="space-y-2">
-                        {fiveSCategories.map((category) => {
-                          const score =
-                            selectedEvaluation.scores[
-                              category.id as keyof FiveSScore
-                            ];
-                          return (
-                            <div
-                              key={category.id}
-                              className="flex justify-between items-center text-sm"
-                            >
-                              <span>{category.name.split(" ")[0]}</span>
-                              <div className="flex items-center gap-2">
-                                <div className="w-20 bg-gray-200 rounded-full h-2">
-                                  <div
-                                    className={`h-2 rounded-full ${
-                                      score >= 4
-                                        ? "bg-green-500"
-                                        : score >= 3
-                                        ? "bg-yellow-500"
-                                        : "bg-red-500"
-                                    }`}
-                                    style={{ width: `${(score / 5) * 100}%` }}
-                                  />
-                                </div>
-                                <span className="font-medium w-8">{score}점</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {selectedEvaluation.findings && (
-                      <div className="border-t pt-4">
-                        <h4 className="font-medium mb-2">평가결과</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {selectedEvaluation.findings}
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedEvaluation.improvements && (
-                      <div className="border-t pt-4">
-                        <h4 className="font-medium mb-2">개선필요사항</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {selectedEvaluation.improvements}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-8">
-                    평가를 선택하여 상세 내용을 확인하세요.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Tab 3: 개선 관리 */}
+        {/* Tab 2: 개선대책 입력 */}
         <TabsContent value="improvement">
           <div className="space-y-6">
-            {/* 개선 등록 폼 */}
+            {/* 개선대책 등록 폼 */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Plus className="h-5 w-5" />
-                  개선 활동 등록
+                  개선대책 등록
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>관련 평가</Label>
                     <Select
@@ -948,62 +903,33 @@ export default function HousekeepingEvaluationPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {evaluations
-                          .filter((e) => e.status !== "완료")
+                          .filter((e) => e.grade === "C" || e.grade === "D")
                           .map((evaluation) => (
                             <SelectItem key={evaluation.id} value={evaluation.id}>
-                              {evaluation.evaluationNo} - {evaluation.area}
+                              {formatYearMonth(evaluation.yearMonth)} - {evaluation.areaName} ({evaluation.grade}등급)
                             </SelectItem>
                           ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>5S 항목</Label>
-                    <Select
-                      value={improvementForm.category}
-                      onValueChange={(value) =>
-                        setImprovementForm({ ...improvementForm, category: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="항목 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {fiveSCategories.map((category) => (
-                          <SelectItem
-                            key={category.id}
-                            value={category.name.split(" ")[0]}
-                          >
-                            {category.name.split(" ")[0]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>문제점</Label>
+                  <div className="space-y-2 md:col-span-2 lg:col-span-1">
+                    <Label>지적사항</Label>
                     <Input
                       value={improvementForm.issue}
                       onChange={(e) =>
-                        setImprovementForm({
-                          ...improvementForm,
-                          issue: e.target.value,
-                        })
+                        setImprovementForm({ ...improvementForm, issue: e.target.value })
                       }
-                      placeholder="문제점"
+                      placeholder="지적사항 입력"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>개선 조치</Label>
+                  <div className="space-y-2 md:col-span-2 lg:col-span-1">
+                    <Label>개선대책</Label>
                     <Input
                       value={improvementForm.action}
                       onChange={(e) =>
-                        setImprovementForm({
-                          ...improvementForm,
-                          action: e.target.value,
-                        })
+                        setImprovementForm({ ...improvementForm, action: e.target.value })
                       }
-                      placeholder="개선 조치 내용"
+                      placeholder="개선대책 입력"
                     />
                   </div>
                   <div className="space-y-2">
@@ -1011,81 +937,94 @@ export default function HousekeepingEvaluationPage() {
                     <Input
                       value={improvementForm.responsible}
                       onChange={(e) =>
-                        setImprovementForm({
-                          ...improvementForm,
-                          responsible: e.target.value,
-                        })
+                        setImprovementForm({ ...improvementForm, responsible: e.target.value })
                       }
                       placeholder="담당자명"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>완료예정일</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="date"
-                        value={improvementForm.dueDate}
-                        onChange={(e) =>
-                          setImprovementForm({
-                            ...improvementForm,
-                            dueDate: e.target.value,
-                          })
-                        }
-                      />
-                      <Button onClick={handleAddImprovement}>
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Input
+                      type="date"
+                      value={improvementForm.dueDate}
+                      onChange={(e) =>
+                        setImprovementForm({ ...improvementForm, dueDate: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2 flex items-end">
+                    <Button onClick={handleAddImprovement} className="w-full">
+                      <Plus className="mr-2 h-4 w-4" />
+                      등록
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* 개선 활동 목록 */}
+            {/* 개선대책 목록 */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5" />
-                  개선 활동 현황
+                  <FileText className="h-5 w-5" />
+                  개선대책 현황
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {improvements.length === 0 ? (
-                  <p className="text-muted-foreground">등록된 개선 활동이 없습니다.</p>
+                  <p className="text-muted-foreground text-center py-8">
+                    등록된 개선대책이 없습니다.
+                  </p>
                 ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>점검번호</TableHead>
-                        <TableHead>점검구역</TableHead>
-                        <TableHead>5S 항목</TableHead>
-                        <TableHead>문제점</TableHead>
-                        <TableHead>개선 조치</TableHead>
+                        <TableHead>평가년월</TableHead>
+                        <TableHead>구역/부서</TableHead>
+                        <TableHead>지적사항</TableHead>
+                        <TableHead>개선대책</TableHead>
                         <TableHead>담당자</TableHead>
                         <TableHead>완료예정일</TableHead>
-                        <TableHead>완료일</TableHead>
+                        <TableHead>조치결과</TableHead>
                         <TableHead>상태</TableHead>
-                        <TableHead>조치</TableHead>
+                        <TableHead className="w-[120px]">상태변경</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {improvements.map((improvement) => (
                         <TableRow key={improvement.id}>
-                          <TableCell className="font-medium">
-                            {improvement.evaluationNo}
+                          <TableCell>{formatYearMonth(improvement.yearMonth)}</TableCell>
+                          <TableCell>
+                            <div className="font-medium">{improvement.departmentName}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {improvement.areaName}
+                            </div>
                           </TableCell>
-                          <TableCell>{improvement.area}</TableCell>
-                          <TableCell>{improvement.category}</TableCell>
-                          <TableCell className="max-w-[150px] truncate">
+                          <TableCell className="max-w-[150px]">
                             {improvement.issue}
                           </TableCell>
-                          <TableCell className="max-w-[150px] truncate">
+                          <TableCell className="max-w-[150px]">
                             {improvement.action}
                           </TableCell>
                           <TableCell>{improvement.responsible}</TableCell>
                           <TableCell>{formatDate(improvement.dueDate)}</TableCell>
                           <TableCell>
-                            {formatDate(improvement.completedDate)}
+                            {improvement.status === "완료" ? (
+                              <span className="text-sm">{improvement.result || "-"}</span>
+                            ) : (
+                              <Input
+                                placeholder="조치결과 입력"
+                                className="h-8 text-sm"
+                                value={improvement.result}
+                                onChange={(e) =>
+                                  handleUpdateImprovementStatus(
+                                    improvement.id,
+                                    improvement.status,
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            )}
                           </TableCell>
                           <TableCell>{getStatusBadge(improvement.status)}</TableCell>
                           <TableCell>
@@ -1094,11 +1033,11 @@ export default function HousekeepingEvaluationPage() {
                               onValueChange={(value) =>
                                 handleUpdateImprovementStatus(
                                   improvement.id,
-                                  value as Improvement["status"]
+                                  value as ImprovementAction["status"]
                                 )
                               }
                             >
-                              <SelectTrigger className="w-[100px]">
+                              <SelectTrigger className="h-8 text-sm">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -1161,142 +1100,209 @@ export default function HousekeepingEvaluationPage() {
           </div>
         </TabsContent>
 
-        {/* Tab 4: 점검 이력 */}
-        <TabsContent value="history">
+        {/* Tab 3: 월별 추이 */}
+        <TabsContent value="trend">
           <div className="space-y-6">
-            {/* 구역별 추이 요약 */}
+            {/* 부서별 월별 점수 추이 */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
-                  구역별 5S 평가 추이
+                  부서별 월별 점수 추이
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {Object.entries(areaTrends).map(([area, data]) => {
-                    const { grade, color } = getGrade(data.avgScore);
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>부서/구역</TableHead>
+                      {trendMonths.map((month) => (
+                        <TableHead key={month} className="text-center">
+                          {formatYearMonth(month)}
+                        </TableHead>
+                      ))}
+                      <TableHead className="text-center">평균</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {areaDefinitions.map((area) => {
+                      const areaEvaluations = evaluations.filter(
+                        (e) => e.departmentId === area.id
+                      );
+                      const avgScore =
+                        areaEvaluations.length > 0
+                          ? Math.round(
+                              (areaEvaluations.reduce((sum, e) => sum + e.average, 0) /
+                                areaEvaluations.length) *
+                                10
+                            ) / 10
+                          : 0;
+                      const avgGrade = avgScore > 0 ? getGrade(avgScore) : null;
+
+                      return (
+                        <TableRow key={area.id}>
+                          <TableCell>
+                            <div className="font-medium">{area.departmentName}</div>
+                            <div className="text-sm text-muted-foreground">{area.areaName}</div>
+                          </TableCell>
+                          {trendMonths.map((month) => {
+                            const evaluation = evaluations.find(
+                              (e) => e.departmentId === area.id && e.yearMonth === month
+                            );
+                            return (
+                              <TableCell key={month} className="text-center">
+                                {evaluation ? (
+                                  <div>
+                                    <div
+                                      className={`font-semibold ${
+                                        evaluation.average >= 4
+                                          ? "text-green-600"
+                                          : evaluation.average >= 3
+                                          ? "text-yellow-600"
+                                          : "text-red-600"
+                                      }`}
+                                    >
+                                      {evaluation.average}
+                                    </div>
+                                    <div className="text-xs">
+                                      {getGradeBadge(evaluation.grade)}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                            );
+                          })}
+                          <TableCell className="text-center">
+                            {avgScore > 0 ? (
+                              <div>
+                                <div className={`font-bold ${avgGrade?.color}`}>
+                                  {avgScore}
+                                </div>
+                                {avgGrade && (
+                                  <div className="text-xs">{getGradeBadge(avgGrade.grade)}</div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            {/* 평균 점수 변화 */}
+            <Card>
+              <CardHeader>
+                <CardTitle>전체 평균 점수 변화</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {trendMonths.map((month) => {
+                    const monthEvaluations = evaluations.filter((e) => e.yearMonth === month);
+                    const avgScore =
+                      monthEvaluations.length > 0
+                        ? Math.round(
+                            (monthEvaluations.reduce((sum, e) => sum + e.average, 0) /
+                              monthEvaluations.length) *
+                              10
+                          ) / 10
+                        : 0;
+                    const grade = avgScore > 0 ? getGrade(avgScore) : null;
+
                     return (
-                      <Card key={area} className="border">
-                        <CardContent className="pt-4">
-                          <div className="text-center">
-                            <div className="font-medium mb-2">{area}</div>
-                            <div className={`text-2xl font-bold ${color}`}>
-                              {data.avgScore}점
-                            </div>
-                            <div className="mt-1">{getGradeBadge(grade)}</div>
-                            <div className="text-xs text-muted-foreground mt-2">
-                              총 {data.evaluations.length}회 평가
-                            </div>
+                      <div key={month} className="flex items-center gap-4">
+                        <div className="w-24 text-sm font-medium">{formatYearMonth(month)}</div>
+                        <div className="flex-1">
+                          <div className="w-full bg-gray-200 rounded-full h-6 relative">
+                            {avgScore > 0 && (
+                              <div
+                                className={`h-6 rounded-full flex items-center justify-end pr-2 ${
+                                  avgScore >= 4
+                                    ? "bg-green-500"
+                                    : avgScore >= 3
+                                    ? "bg-yellow-500"
+                                    : avgScore >= 2.5
+                                    ? "bg-orange-500"
+                                    : "bg-red-500"
+                                }`}
+                                style={{ width: `${(avgScore / 5) * 100}%` }}
+                              >
+                                <span className="text-white text-sm font-bold">{avgScore}</span>
+                              </div>
+                            )}
                           </div>
-                        </CardContent>
-                      </Card>
+                        </div>
+                        <div className="w-16">
+                          {grade && getGradeBadge(grade.grade)}
+                        </div>
+                        <div className="w-16 text-sm text-muted-foreground">
+                          ({monthEvaluations.length}건)
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
               </CardContent>
             </Card>
 
-            {/* 전체 이력 테이블 */}
+            {/* 부서별 평균 요약 */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <History className="h-5 w-5" />
-                  전체 점검 이력
-                </CardTitle>
+                <CardTitle>부서별 누적 평균</CardTitle>
               </CardHeader>
               <CardContent>
-                {evaluations.length === 0 ? (
-                  <p className="text-muted-foreground">등록된 점검 이력이 없습니다.</p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>점검번호</TableHead>
-                        <TableHead>점검일</TableHead>
-                        <TableHead>점검구역</TableHead>
-                        <TableHead>점검자</TableHead>
-                        <TableHead className="text-center">정리</TableHead>
-                        <TableHead className="text-center">정돈</TableHead>
-                        <TableHead className="text-center">청소</TableHead>
-                        <TableHead className="text-center">청결</TableHead>
-                        <TableHead className="text-center">습관화</TableHead>
-                        <TableHead className="text-center">총점</TableHead>
-                        <TableHead className="text-center">평균</TableHead>
-                        <TableHead className="text-center">등급</TableHead>
-                        <TableHead>상태</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {evaluations.map((evaluation) => (
-                        <TableRow key={evaluation.id}>
-                          <TableCell className="font-medium">
-                            {evaluation.evaluationNo}
-                          </TableCell>
-                          <TableCell>
-                            {formatDate(evaluation.evaluationDate)}
-                          </TableCell>
-                          <TableCell>{evaluation.area}</TableCell>
-                          <TableCell>{evaluation.evaluator}</TableCell>
-                          <TableCell className="text-center">
-                            <ScoreCell score={evaluation.scores.seiri} />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <ScoreCell score={evaluation.scores.seiton} />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <ScoreCell score={evaluation.scores.seiso} />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <ScoreCell score={evaluation.scores.seiketsu} />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <ScoreCell score={evaluation.scores.shitsuke} />
-                          </TableCell>
-                          <TableCell className="text-center font-semibold">
-                            {evaluation.totalScore}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {evaluation.average}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getGradeBadge(evaluation.grade)}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(evaluation.status)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {departmentAverages
+                    .sort((a, b) => b.average - a.average)
+                    .map((dept) => {
+                      const grade = getGrade(dept.average);
+                      return (
+                        <Card key={dept.department} className="border">
+                          <CardContent className="pt-4">
+                            <div className="text-center">
+                              <div className="font-medium mb-2">{dept.department}</div>
+                              <div className={`text-2xl font-bold ${grade.color}`}>
+                                {dept.average}점
+                              </div>
+                              <div className="mt-1">{getGradeBadge(grade.grade)}</div>
+                              <div className="text-xs text-muted-foreground mt-2">
+                                총 {dept.count}회 평가
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                </div>
               </CardContent>
             </Card>
 
-            {/* 5S 항목별 평균 추이 */}
+            {/* 항목별 전체 평균 */}
             <Card>
               <CardHeader>
-                <CardTitle>5S 항목별 전체 평균</CardTitle>
+                <CardTitle>5행 항목별 전체 평균</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {fiveSCategories.map((category) => {
+                  {evaluationItems.map((item) => {
                     const avgScore =
                       evaluations.length > 0
                         ? evaluations.reduce(
-                            (sum, e) =>
-                              sum + e.scores[category.id as keyof FiveSScore],
+                            (sum, e) => sum + e.scores[item.id as keyof EvaluationScores],
                             0
                           ) / evaluations.length
                         : 0;
                     const roundedAvg = Math.round(avgScore * 10) / 10;
 
                     return (
-                      <div
-                        key={category.id}
-                        className="flex items-center gap-4"
-                      >
-                        <div className="w-32 text-sm font-medium">
-                          {category.name.split(" ")[0]}
-                        </div>
+                      <div key={item.id} className="flex items-center gap-4">
+                        <div className="w-20 text-sm font-medium">{item.name}</div>
                         <div className="flex-1">
                           <div className="w-full bg-gray-200 rounded-full h-4">
                             <div
@@ -1311,10 +1317,246 @@ export default function HousekeepingEvaluationPage() {
                             />
                           </div>
                         </div>
-                        <div className="w-16 text-right font-semibold">
-                          {roundedAvg}점
-                        </div>
+                        <div className="w-16 text-right font-semibold">{roundedAvg}점</div>
                       </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Tab 4: 구역도 관리 */}
+        <TabsContent value="area-management">
+          <div className="space-y-6">
+            {/* 구역 추가 폼 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  구역 정의 추가
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <div className="space-y-2">
+                    <Label>부서명</Label>
+                    <Input
+                      value={newAreaForm.departmentName}
+                      onChange={(e) =>
+                        setNewAreaForm({ ...newAreaForm, departmentName: e.target.value })
+                      }
+                      placeholder="부서명"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>구역명</Label>
+                    <Input
+                      value={newAreaForm.areaName}
+                      onChange={(e) =>
+                        setNewAreaForm({ ...newAreaForm, areaName: e.target.value })
+                      }
+                      placeholder="구역명"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>담당자</Label>
+                    <Input
+                      value={newAreaForm.manager}
+                      onChange={(e) =>
+                        setNewAreaForm({ ...newAreaForm, manager: e.target.value })
+                      }
+                      placeholder="담당자명"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>설명</Label>
+                    <Input
+                      value={newAreaForm.description}
+                      onChange={(e) =>
+                        setNewAreaForm({ ...newAreaForm, description: e.target.value })
+                      }
+                      placeholder="구역 설명 (선택)"
+                    />
+                  </div>
+                  <div className="space-y-2 flex items-end">
+                    <Button onClick={handleAddArea} className="w-full">
+                      <Plus className="mr-2 h-4 w-4" />
+                      추가
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 구역 목록 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  구역 정의 및 담당자 배정
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {areaDefinitions.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    정의된 구역이 없습니다.
+                  </p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>부서명</TableHead>
+                        <TableHead>구역명</TableHead>
+                        <TableHead>담당자</TableHead>
+                        <TableHead>설명</TableHead>
+                        <TableHead className="text-center">최근 평가</TableHead>
+                        <TableHead className="w-[100px]">관리</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {areaDefinitions.map((area) => {
+                        const latestEvaluation = evaluations.find(
+                          (e) => e.departmentId === area.id
+                        );
+                        const isEditing = editingAreaId === area.id;
+
+                        return (
+                          <TableRow key={area.id}>
+                            <TableCell>
+                              {isEditing ? (
+                                <Input
+                                  value={area.departmentName}
+                                  onChange={(e) =>
+                                    handleUpdateArea(area.id, { departmentName: e.target.value })
+                                  }
+                                  className="h-8"
+                                />
+                              ) : (
+                                <span className="font-medium">{area.departmentName}</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {isEditing ? (
+                                <Input
+                                  value={area.areaName}
+                                  onChange={(e) =>
+                                    handleUpdateArea(area.id, { areaName: e.target.value })
+                                  }
+                                  className="h-8"
+                                />
+                              ) : (
+                                area.areaName
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {isEditing ? (
+                                <Input
+                                  value={area.manager}
+                                  onChange={(e) =>
+                                    handleUpdateArea(area.id, { manager: e.target.value })
+                                  }
+                                  className="h-8"
+                                />
+                              ) : (
+                                area.manager
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {isEditing ? (
+                                <Input
+                                  value={area.description}
+                                  onChange={(e) =>
+                                    handleUpdateArea(area.id, { description: e.target.value })
+                                  }
+                                  className="h-8"
+                                  placeholder="설명 입력"
+                                />
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  {area.description || "-"}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {latestEvaluation ? (
+                                <div>
+                                  <div className="text-sm">{formatYearMonth(latestEvaluation.yearMonth)}</div>
+                                  <div>{getGradeBadge(latestEvaluation.grade)}</div>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">미평가</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                {isEditing ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setEditingAreaId(null)}
+                                  >
+                                    <Save className="h-4 w-4" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setEditingAreaId(area.id)}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteArea(area.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 구역별 담당자 현황 요약 */}
+            <Card>
+              <CardHeader>
+                <CardTitle>담당자별 구역 현황</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {Array.from(new Set(areaDefinitions.map((a) => a.manager))).map((manager) => {
+                    const areas = areaDefinitions.filter((a) => a.manager === manager);
+                    return (
+                      <Card key={manager} className="border">
+                        <CardContent className="pt-4">
+                          <div className="font-medium text-lg mb-2">{manager}</div>
+                          <div className="space-y-1">
+                            {areas.map((area) => (
+                              <div
+                                key={area.id}
+                                className="text-sm text-muted-foreground flex justify-between"
+                              >
+                                <span>{area.areaName}</span>
+                                <span className="text-xs bg-muted px-2 py-0.5 rounded">
+                                  {area.departmentName}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-2 pt-2 border-t text-sm text-muted-foreground">
+                            총 {areas.length}개 구역 담당
+                          </div>
+                        </CardContent>
+                      </Card>
                     );
                   })}
                 </div>
@@ -1325,15 +1567,4 @@ export default function HousekeepingEvaluationPage() {
       </Tabs>
     </div>
   );
-}
-
-// 점수 셀 컴포넌트
-function ScoreCell({ score }: { score: number }) {
-  const color =
-    score >= 4
-      ? "text-green-600"
-      : score >= 3
-      ? "text-yellow-600"
-      : "text-red-600";
-  return <span className={`font-medium ${color}`}>{score}</span>;
 }
