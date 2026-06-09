@@ -177,39 +177,217 @@ const formTemplates: Record<string, { fields: { name: string; label: string; typ
       { name: "remarks", label: "비고", type: "textarea" },
     ],
   },
+  processCapability: {
+    fields: [
+      { name: "recordDate", label: "측정일", type: "date", required: true },
+      { name: "partName", label: "품명", type: "text", required: true },
+      { name: "partNo", label: "품번", type: "text" },
+      { name: "vehicleType", label: "차종", type: "text" },
+      { name: "sampleCount", label: "시료수", type: "number" },
+      { name: "specification", label: "규격", type: "text" },
+      { name: "upperLimit", label: "상한", type: "text" },
+      { name: "lowerLimit", label: "하한", type: "text" },
+      { name: "average", label: "평균(X̄)", type: "text" },
+      { name: "stdDev", label: "표준편차(σ)", type: "text" },
+      { name: "ppk", label: "PPK값", type: "text", required: true },
+      { name: "cpk", label: "Cpk값", type: "text" },
+      { name: "result", label: "판정", type: "select", options: ["충분(≥1.67)", "개선요(1.33~1.67)", "부족(<1.33)"], required: true },
+      { name: "measurementTool", label: "측정기", type: "text" },
+      { name: "inspector", label: "조사자", type: "text" },
+      { name: "remarks", label: "비고", type: "textarea" },
+    ],
+  },
+  mtbfMttr: {
+    fields: [
+      { name: "recordDate", label: "분석월", type: "date", required: true },
+      { name: "equipmentNo", label: "설비번호", type: "text", required: true },
+      { name: "equipmentName", label: "설비명", type: "text", required: true },
+      { name: "process", label: "공정", type: "text" },
+      { name: "installDate", label: "설치일자", type: "date" },
+      { name: "loadTime", label: "부하시간(min)", type: "number" },
+      { name: "actualRunTime", label: "실가동시간(min)", type: "number" },
+      { name: "downtime", label: "비가동시간(min)", type: "number" },
+      { name: "breakdownCount", label: "고장횟수", type: "number" },
+      { name: "mtbf", label: "MTBF(min)", type: "text", required: true },
+      { name: "mttr", label: "MTTR(min)", type: "text", required: true },
+      { name: "availability", label: "가동률(%)", type: "text" },
+      { name: "result", label: "판정", type: "select", options: ["목표달성", "미달성"], required: true },
+      { name: "breakdownDetails", label: "고장내역", type: "textarea" },
+      { name: "remarks", label: "비고", type: "textarea" },
+    ],
+  },
+  skillAssessment: {
+    fields: [
+      { name: "recordDate", label: "평가일", type: "date", required: true },
+      { name: "employeeName", label: "성명", type: "text", required: true },
+      { name: "department", label: "부서", type: "text" },
+      { name: "position", label: "직급", type: "text" },
+      { name: "workProcess", label: "담당공정", type: "text" },
+      { name: "evaluationItems", label: "평가항목", type: "textarea" },
+      { name: "skillLevel", label: "숙련도등급", type: "select", options: ["A(상)", "B(중)", "C(하)", "신입"], required: true },
+      { name: "score", label: "평가점수", type: "number" },
+      { name: "evaluator", label: "평가자", type: "text" },
+      { name: "result", label: "판정", type: "select", options: ["합격", "재교육필요", "불합격"], required: true },
+      { name: "remarks", label: "비고", type: "textarea" },
+    ],
+  },
+  reliabilityTest: {
+    fields: [
+      { name: "recordDate", label: "시험일자", type: "date", required: true },
+      { name: "vehicleType", label: "차종", type: "text", required: true },
+      { name: "partName", label: "품명", type: "text", required: true },
+      { name: "partNo", label: "부번", type: "text" },
+      { name: "testStandard", label: "시험규격", type: "text" },
+      { name: "testType", label: "시험유형", type: "select", options: ["정기신뢰성", "법규시험", "특별시험"] },
+      { name: "testItems", label: "시험항목", type: "textarea" },
+      { name: "standardSpec", label: "규격", type: "textarea" },
+      { name: "testResult", label: "시험결과", type: "textarea" },
+      { name: "result", label: "판정", type: "select", options: ["합격", "불합격", "조건부"], required: true },
+      { name: "tester", label: "시험자", type: "text" },
+      { name: "remarks", label: "비고", type: "textarea" },
+    ],
+  },
+  supplierSurvey: {
+    fields: [
+      { name: "recordDate", label: "조사일자", type: "date", required: true },
+      { name: "companyName", label: "업체명", type: "text", required: true },
+      { name: "representative", label: "대표자", type: "text" },
+      { name: "businessType", label: "업종", type: "text" },
+      { name: "establishYear", label: "설립년도", type: "text" },
+      { name: "employees", label: "종업원수", type: "number" },
+      { name: "salesAmount", label: "매출액(억)", type: "text" },
+      { name: "qualitySystem", label: "품질시스템", type: "select", options: ["IATF16949", "ISO9001", "없음"] },
+      { name: "majorCustomers", label: "주요거래처", type: "textarea" },
+      { name: "facilities", label: "주요설비현황", type: "textarea" },
+      { name: "result", label: "판정", type: "select", options: ["적합", "조건부적합", "부적합"], required: true },
+      { name: "remarks", label: "비고", type: "textarea" },
+    ],
+  },
+  torqueCheck: {
+    fields: [
+      { name: "recordDate", label: "측정일", type: "date", required: true },
+      { name: "shift", label: "조", type: "select", options: ["A조", "B조"] },
+      { name: "vehicleType", label: "차종", type: "text" },
+      { name: "line", label: "라인", type: "select", options: ["FRT", "RR", "서브"] },
+      { name: "measurementPoint", label: "측정위치", type: "text" },
+      { name: "standardMin", label: "기준값(Min)", type: "text" },
+      { name: "standardMax", label: "기준값(Max)", type: "text" },
+      { name: "actualLH", label: "실측값(LH)", type: "text" },
+      { name: "actualRH", label: "실측값(RH)", type: "text" },
+      { name: "result", label: "판정", type: "select", options: ["합격", "불합격"], required: true },
+      { name: "measurer", label: "측정자", type: "text" },
+      { name: "remarks", label: "비고", type: "textarea" },
+    ],
+  },
+  riskAssessment: {
+    fields: [
+      { name: "recordDate", label: "평가일", type: "date", required: true },
+      { name: "processName", label: "프로세스", type: "text", required: true },
+      { name: "requirement", label: "요구사항", type: "textarea" },
+      { name: "riskDescription", label: "리스크(불확실성)", type: "textarea" },
+      { name: "severityBefore", label: "평가(심각도)", type: "number" },
+      { name: "occurrenceBefore", label: "평가(발생도)", type: "number" },
+      { name: "detectionBefore", label: "평가(검출도)", type: "number" },
+      { name: "riskLevel", label: "리스크등급", type: "select", options: ["상", "중", "하"] },
+      { name: "countermeasure", label: "대응조치", type: "textarea" },
+      { name: "severityAfter", label: "조치후(심각도)", type: "number" },
+      { name: "occurrenceAfter", label: "조치후(발생도)", type: "number" },
+      { name: "detectionAfter", label: "조치후(검출도)", type: "number" },
+      { name: "responsibleDept", label: "주관부서", type: "text" },
+      { name: "result", label: "상태", type: "select", options: ["완료", "진행중", "계획"], required: true },
+      { name: "remarks", label: "비고", type: "textarea" },
+    ],
+  },
+  ppmTracking: {
+    fields: [
+      { name: "recordDate", label: "기준월", type: "date", required: true },
+      { name: "supplierCode", label: "업체코드", type: "text" },
+      { name: "supplierName", label: "업체명", type: "text" },
+      { name: "receivedQty", label: "입고수량", type: "number", required: true },
+      { name: "defectQty", label: "불량수량", type: "number" },
+      { name: "ppmValue", label: "PPM값", type: "number" },
+      { name: "defectTypes", label: "불량유형", type: "textarea" },
+      { name: "targetPpm", label: "목표PPM", type: "number" },
+      { name: "result", label: "판정", type: "select", options: ["목표달성", "미달성"], required: true },
+      { name: "correctionAction", label: "시정조치", type: "textarea" },
+      { name: "remarks", label: "비고", type: "textarea" },
+    ],
+  },
 };
 
 function getFormTemplate(itemName: string, processName: string): typeof formTemplates.default {
   const name = itemName.toLowerCase();
   const process = processName?.toLowerCase() || "";
 
-  if (name.includes("검사") || name.includes("초") || name.includes("중") || name.includes("종")) {
+  // 공정능력 관련
+  if (name.includes("공정능력") || name.includes("cpk") || name.includes("ppk")) {
+    return formTemplates.processCapability;
+  }
+  // MTBF/MTTR 설비분석
+  if (name.includes("mtbf") || name.includes("mttr") || name.includes("가동률분석")) {
+    return formTemplates.mtbfMttr;
+  }
+  // 숙련도/작업자 능력평가
+  if (name.includes("숙련도") || name.includes("능력평가") || name.includes("직무능력")) {
+    return formTemplates.skillAssessment;
+  }
+  // 신뢰성시험
+  if (name.includes("신뢰성") || name.includes("정기시험") || name.includes("시험보고")) {
+    return formTemplates.reliabilityTest;
+  }
+  // 업체 실태조사
+  if (name.includes("실태조사") || name.includes("실태현황")) {
+    return formTemplates.supplierSurvey;
+  }
+  // 토크 측정
+  if (name.includes("토크") || name.includes("체결력")) {
+    return formTemplates.torqueCheck;
+  }
+  // 리스크 평가
+  if (name.includes("리스크") || name.includes("risk") || name.includes("위험평가")) {
+    return formTemplates.riskAssessment;
+  }
+  // PPM 관리
+  if (name.includes("ppm") || name.includes("불량률관리")) {
+    return formTemplates.ppmTracking;
+  }
+  // 검사 관련
+  if (name.includes("검사") || name.includes("초물") || name.includes("중물") || name.includes("종물")) {
     return formTemplates.inspection;
   }
+  // 측정 관련
   if (name.includes("색차") || name.includes("도막") || name.includes("치수") || name.includes("측정")) {
     return formTemplates.measurement;
   }
+  // 설비점검
   if (name.includes("설비") || name.includes("점검") || process.includes("설비보전")) {
     return formTemplates.equipment;
   }
+  // 교육훈련
   if (name.includes("교육") || name.includes("훈련") || process.includes("인적자원")) {
     return formTemplates.training;
   }
+  // 내부심사
   if (name.includes("심사") || process.includes("내부심사")) {
     return formTemplates.audit;
   }
+  // KPI/성과지표
   if (name.includes("kpi") || name.includes("성과") || name.includes("지표") || name.includes("달성율")) {
     return formTemplates.kpi;
   }
+  // 비상대응
   if (name.includes("비상") || process.includes("비상사태")) {
     return formTemplates.emergency;
   }
+  // 공급자 평가
   if (name.includes("공급자") || name.includes("협력사") || process.includes("공급자")) {
     return formTemplates.supplier;
   }
+  // 교정
   if (name.includes("교정") || name.includes("계측기") || process.includes("계측")) {
     return formTemplates.calibration;
   }
+  // 문서관리
   if (name.includes("문서") || name.includes("절차서") || name.includes("표준서") || name.includes("계획서")) {
     return formTemplates.document;
   }
