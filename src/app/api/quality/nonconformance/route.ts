@@ -4,8 +4,8 @@ import prisma from "@/lib/prisma";
 export async function GET() {
   try {
     const nonconformances = await prisma.nonconformance.findMany({
-      include: { detectedBy: true },
-      orderBy: { detectedAt: "desc" },
+      include: { reporter: true, part: true },
+      orderBy: { detectionDate: "desc" },
       take: 100,
     });
     return NextResponse.json(nonconformances);

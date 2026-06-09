@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const inspections = await prisma.inspectionRecord.findMany({
       include: { inspector: true },
-      orderBy: { inspectedAt: "desc" },
+      orderBy: { inspectionDate: "desc" },
       take: 100,
     });
     return NextResponse.json(inspections);

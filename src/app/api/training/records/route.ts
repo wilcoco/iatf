@@ -4,8 +4,8 @@ import prisma from "@/lib/prisma";
 export async function GET() {
   try {
     const records = await prisma.trainingRecord.findMany({
-      include: { trainee: true, trainingPlan: true },
-      orderBy: { completedAt: "desc" },
+      include: { user: true, trainingPlan: true },
+      orderBy: { createdAt: "desc" },
       take: 100,
     });
     return NextResponse.json(records);

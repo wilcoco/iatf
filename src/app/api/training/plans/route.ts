@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 export async function GET() {
   try {
     const plans = await prisma.trainingPlan.findMany({
-      orderBy: { scheduledDate: "desc" },
+      orderBy: { planDate: "desc" },
       take: 100,
     });
     return NextResponse.json(plans);

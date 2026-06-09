@@ -9,13 +9,11 @@ import { Plus, Wrench } from "lucide-react";
 
 interface Jig {
   id: number;
-  code: string;
+  jigNo: string;
   name: string;
   type: string;
+  process: string;
   status: string;
-  location: string;
-  lastInspectionDate: string;
-  nextInspectionDate: string;
 }
 
 export default function JigsPage() {
@@ -78,21 +76,17 @@ export default function JigsPage() {
                   <TableHead>치공구코드</TableHead>
                   <TableHead>치공구명</TableHead>
                   <TableHead>유형</TableHead>
-                  <TableHead>위치</TableHead>
-                  <TableHead>최근점검일</TableHead>
-                  <TableHead>차기점검일</TableHead>
+                  <TableHead>공정</TableHead>
                   <TableHead>상태</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {jigs.map((jig) => (
                   <TableRow key={jig.id}>
-                    <TableCell className="font-mono">{jig.code}</TableCell>
+                    <TableCell className="font-mono">{jig.jigNo}</TableCell>
                     <TableCell className="font-medium">{jig.name}</TableCell>
                     <TableCell>{jig.type || "-"}</TableCell>
-                    <TableCell>{jig.location || "-"}</TableCell>
-                    <TableCell>{jig.lastInspectionDate ? new Date(jig.lastInspectionDate).toLocaleDateString("ko-KR") : "-"}</TableCell>
-                    <TableCell>{jig.nextInspectionDate ? new Date(jig.nextInspectionDate).toLocaleDateString("ko-KR") : "-"}</TableCell>
+                    <TableCell>{jig.process || "-"}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[jig.status] || "bg-gray-100"}`}>
                         {statusLabels[jig.status] || jig.status}

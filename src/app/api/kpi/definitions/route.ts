@@ -4,8 +4,8 @@ import prisma from "@/lib/prisma";
 export async function GET() {
   try {
     const kpis = await prisma.kpiDefinition.findMany({
-      include: { department: true },
-      orderBy: { code: "asc" },
+      include: { responsibleDept: true },
+      orderBy: { kpiName: "asc" },
     });
     return NextResponse.json(kpis);
   } catch (error) {

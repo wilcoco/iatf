@@ -3,9 +3,9 @@ import prisma from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const records = await prisma.kpiRecord.findMany({
-      include: { kpiDefinition: true },
-      orderBy: { period: "desc" },
+    const records = await prisma.kpiResult.findMany({
+      include: { kpi: true },
+      orderBy: { periodYear: "desc" },
       take: 100,
     });
     return NextResponse.json(records);

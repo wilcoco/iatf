@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const evaluations = await prisma.supplierEvaluation.findMany({
       include: { supplier: true },
-      orderBy: { evaluationPeriod: "desc" },
+      orderBy: { evaluationYear: "desc" },
       take: 100,
     });
     return NextResponse.json(evaluations);

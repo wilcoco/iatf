@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 export async function GET() {
   try {
     const actions = await prisma.correctiveAction.findMany({
-      include: { responsiblePerson: true },
+      include: { teamLeader: true, nonconformance: true },
       orderBy: { createdAt: "desc" },
       take: 100,
     });

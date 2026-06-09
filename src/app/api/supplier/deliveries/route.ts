@@ -3,9 +3,9 @@ import prisma from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const deliveries = await prisma.supplierDelivery.findMany({
+    const deliveries = await prisma.supplierDeliveryPerformance.findMany({
       include: { supplier: true },
-      orderBy: { deliveredAt: "desc" },
+      orderBy: { yearMonth: "desc" },
       take: 100,
     });
     return NextResponse.json(deliveries);

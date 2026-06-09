@@ -9,13 +9,13 @@ import { Plus, Box } from "lucide-react";
 
 interface Mold {
   id: number;
-  code: string;
+  moldNo: string;
   name: string;
-  type: string;
-  cavities: number;
-  cycleTime: number;
+  cavityCount: number;
+  storageLocation: string;
+  owner: string;
   status: string;
-  location: string;
+  shotCount: number;
 }
 
 export default function MoldsPage() {
@@ -77,22 +77,22 @@ export default function MoldsPage() {
                 <TableRow>
                   <TableHead>금형코드</TableHead>
                   <TableHead>금형명</TableHead>
-                  <TableHead>유형</TableHead>
                   <TableHead>캐비티</TableHead>
-                  <TableHead>사이클타임</TableHead>
-                  <TableHead>위치</TableHead>
+                  <TableHead>보관위치</TableHead>
+                  <TableHead>소유</TableHead>
+                  <TableHead>샷수</TableHead>
                   <TableHead>상태</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {molds.map((mold) => (
                   <TableRow key={mold.id}>
-                    <TableCell className="font-mono">{mold.code}</TableCell>
+                    <TableCell className="font-mono">{mold.moldNo}</TableCell>
                     <TableCell className="font-medium">{mold.name}</TableCell>
-                    <TableCell>{mold.type || "-"}</TableCell>
-                    <TableCell>{mold.cavities || "-"}</TableCell>
-                    <TableCell>{mold.cycleTime ? `${mold.cycleTime}초` : "-"}</TableCell>
-                    <TableCell>{mold.location || "-"}</TableCell>
+                    <TableCell>{mold.cavityCount || "-"}</TableCell>
+                    <TableCell>{mold.storageLocation || "-"}</TableCell>
+                    <TableCell>{mold.owner || "-"}</TableCell>
+                    <TableCell>{mold.shotCount?.toLocaleString() || "0"}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[mold.status] || "bg-gray-100"}`}>
                         {statusLabels[mold.status] || mold.status}

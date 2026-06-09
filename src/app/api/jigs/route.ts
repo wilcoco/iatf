@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 export async function GET() {
   try {
     const jigs = await prisma.jig.findMany({
-      orderBy: { code: "asc" },
+      orderBy: { jigNo: "asc" },
     });
     return NextResponse.json(jigs);
   } catch (error) {

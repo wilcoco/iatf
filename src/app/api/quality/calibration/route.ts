@@ -4,8 +4,8 @@ import prisma from "@/lib/prisma";
 export async function GET() {
   try {
     const calibrations = await prisma.calibrationRecord.findMany({
-      include: { instrument: true, calibratedBy: true },
-      orderBy: { calibratedAt: "desc" },
+      include: { instrument: true },
+      orderBy: { calibrationDate: "desc" },
       take: 100,
     });
     return NextResponse.json(calibrations);

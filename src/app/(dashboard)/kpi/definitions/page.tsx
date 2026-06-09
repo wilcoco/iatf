@@ -9,14 +9,13 @@ import { Plus, Target } from "lucide-react";
 
 interface KpiDefinition {
   id: number;
-  code: string;
-  name: string;
+  kpiName: string;
   category: string;
   unit: string;
   targetValue: number;
   frequency: string;
   isActive: boolean;
-  department?: { name: string };
+  responsibleDept?: { name: string };
 }
 
 export default function KpiDefinitionsPage() {
@@ -70,7 +69,6 @@ export default function KpiDefinitionsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>코드</TableHead>
                   <TableHead>KPI명</TableHead>
                   <TableHead>분류</TableHead>
                   <TableHead>부서</TableHead>
@@ -83,10 +81,9 @@ export default function KpiDefinitionsPage() {
               <TableBody>
                 {kpis.map((kpi) => (
                   <TableRow key={kpi.id}>
-                    <TableCell className="font-mono">{kpi.code}</TableCell>
-                    <TableCell className="font-medium">{kpi.name}</TableCell>
+                    <TableCell className="font-medium">{kpi.kpiName}</TableCell>
                     <TableCell>{kpi.category || "-"}</TableCell>
-                    <TableCell>{kpi.department?.name || "-"}</TableCell>
+                    <TableCell>{kpi.responsibleDept?.name || "-"}</TableCell>
                     <TableCell>{kpi.unit || "-"}</TableCell>
                     <TableCell>{kpi.targetValue ?? "-"}</TableCell>
                     <TableCell>{frequencyLabels[kpi.frequency] || kpi.frequency}</TableCell>

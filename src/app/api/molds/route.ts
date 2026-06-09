@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 export async function GET() {
   try {
     const molds = await prisma.mold.findMany({
-      orderBy: { code: "asc" },
+      orderBy: { moldNo: "asc" },
     });
     return NextResponse.json(molds);
   } catch (error) {
