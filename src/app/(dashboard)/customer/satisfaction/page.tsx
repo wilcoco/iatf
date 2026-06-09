@@ -25,136 +25,229 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ClipboardList,
-  BarChart3,
-  TrendingUp,
-  History,
   Star,
-  AlertCircle,
+  TrendingUp,
+  Wrench,
+  Plus,
+  Save,
 } from "lucide-react";
 
-// Survey info interface
-interface SurveyInfo {
-  surveyNo: string;
-  surveyPeriodStart: string;
-  surveyPeriodEnd: string;
-  targetCustomer: string;
+// Survey registration interface
+interface SurveyRegistration {
+  id: number;
+  surveyDate: string;
+  surveyYear: string;
+  surveyQuarter: string;
+  customer: string;
   manager: string;
+  surveyMethod: string;
 }
 
-// Satisfaction scores (5-point scale)
-interface SatisfactionScores {
-  // Product Quality
-  appearance: number;
-  functionality: number;
-  reliability: number;
-  // Delivery
-  deliveryCompliance: number;
-  emergencyResponse: number;
-  // Service
-  technicalSupport: number;
-  claimResponse: number;
-  communication: number;
-  // Price
-  priceLevel: number;
-  costReductionCooperation: number;
+// Survey scores interface
+interface SurveyScores {
+  id: number;
+  surveyId: number;
+  qualityScore: number;
+  deliveryScore: number;
+  responseScore: number;
+  priceScore: number;
+  totalScore: number;
 }
 
-// Improvement action
+// Quarterly trend data
+interface TrendData {
+  id: number;
+  year: string;
+  quarter: string;
+  qualityAvg: number;
+  deliveryAvg: number;
+  responseAvg: number;
+  priceAvg: number;
+  overallAvg: number;
+}
+
+// Improvement action interface
 interface ImprovementAction {
   id: number;
-  unsatisfiedItem: string;
-  improvementPlan: string;
-  responsibleDept: string;
+  surveyId: number;
+  category: string;
+  issue: string;
+  action: string;
+  responsiblePerson: string;
   dueDate: string;
   status: string;
 }
 
-// Survey history
-interface SurveyHistory {
-  id: number;
-  surveyNo: string;
-  surveyDate: string;
-  customer: string;
-  totalScore: number;
-  avgScore: number;
-  previousAvg: number;
-  change: number;
-}
+// Survey methods
+const surveyMethods = ["방문", "전화", "이메일", "서면"];
 
-// Initial data
-const initialSurveyInfo: SurveyInfo = {
-  surveyNo: "CS-2026-001",
-  surveyPeriodStart: "2026-06-01",
-  surveyPeriodEnd: "2026-06-30",
-  targetCustomer: "현대자동차",
-  manager: "김품질",
-};
+// Quarter options
+const quarterOptions = ["1분기", "2분기", "3분기", "4분기"];
 
-const initialScores: SatisfactionScores = {
-  appearance: 4,
-  functionality: 5,
-  reliability: 4,
-  deliveryCompliance: 3,
-  emergencyResponse: 4,
-  technicalSupport: 5,
-  claimResponse: 4,
-  communication: 4,
-  priceLevel: 3,
-  costReductionCooperation: 4,
-};
+// Year options
+const yearOptions = ["2024", "2025", "2026"];
 
+// Initial survey registrations
+const initialSurveys: SurveyRegistration[] = [
+  {
+    id: 1,
+    surveyDate: "2026-03-15",
+    surveyYear: "2026",
+    surveyQuarter: "1분기",
+    customer: "현대자동차",
+    manager: "김품질",
+    surveyMethod: "방문",
+  },
+  {
+    id: 2,
+    surveyDate: "2026-03-20",
+    surveyYear: "2026",
+    surveyQuarter: "1분기",
+    customer: "기아자동차",
+    manager: "박영업",
+    surveyMethod: "이메일",
+  },
+  {
+    id: 3,
+    surveyDate: "2026-06-05",
+    surveyYear: "2026",
+    surveyQuarter: "2분기",
+    customer: "현대자동차",
+    manager: "김품질",
+    surveyMethod: "전화",
+  },
+];
+
+// Initial scores data
+const initialScores: SurveyScores[] = [
+  {
+    id: 1,
+    surveyId: 1,
+    qualityScore: 4,
+    deliveryScore: 3,
+    responseScore: 5,
+    priceScore: 3,
+    totalScore: 15,
+  },
+  {
+    id: 2,
+    surveyId: 2,
+    qualityScore: 5,
+    deliveryScore: 4,
+    responseScore: 4,
+    priceScore: 4,
+    totalScore: 17,
+  },
+  {
+    id: 3,
+    surveyId: 3,
+    qualityScore: 4,
+    deliveryScore: 4,
+    responseScore: 5,
+    priceScore: 3,
+    totalScore: 16,
+  },
+];
+
+// Initial trend data
+const initialTrends: TrendData[] = [
+  {
+    id: 1,
+    year: "2025",
+    quarter: "1분기",
+    qualityAvg: 3.8,
+    deliveryAvg: 3.5,
+    responseAvg: 4.0,
+    priceAvg: 3.2,
+    overallAvg: 3.6,
+  },
+  {
+    id: 2,
+    year: "2025",
+    quarter: "2분기",
+    qualityAvg: 4.0,
+    deliveryAvg: 3.7,
+    responseAvg: 4.2,
+    priceAvg: 3.3,
+    overallAvg: 3.8,
+  },
+  {
+    id: 3,
+    year: "2025",
+    quarter: "3분기",
+    qualityAvg: 4.2,
+    deliveryAvg: 3.8,
+    responseAvg: 4.3,
+    priceAvg: 3.5,
+    overallAvg: 4.0,
+  },
+  {
+    id: 4,
+    year: "2025",
+    quarter: "4분기",
+    qualityAvg: 4.3,
+    deliveryAvg: 4.0,
+    responseAvg: 4.5,
+    priceAvg: 3.6,
+    overallAvg: 4.1,
+  },
+  {
+    id: 5,
+    year: "2026",
+    quarter: "1분기",
+    qualityAvg: 4.5,
+    deliveryAvg: 3.5,
+    responseAvg: 4.5,
+    priceAvg: 3.5,
+    overallAvg: 4.0,
+  },
+  {
+    id: 6,
+    year: "2026",
+    quarter: "2분기",
+    qualityAvg: 4.0,
+    deliveryAvg: 4.0,
+    responseAvg: 5.0,
+    priceAvg: 3.0,
+    overallAvg: 4.0,
+  },
+];
+
+// Initial improvement actions
 const initialImprovements: ImprovementAction[] = [
   {
     id: 1,
-    unsatisfiedItem: "납기준수",
-    improvementPlan: "생산계획 시스템 개선 및 실시간 모니터링 강화",
-    responsibleDept: "생산관리팀",
-    dueDate: "2026-07-31",
+    surveyId: 1,
+    category: "납기",
+    issue: "긴급 주문 시 납기 지연 발생",
+    action: "안전재고 확보 및 생산계획 유연성 강화",
+    responsiblePerson: "생산팀 이생산",
+    dueDate: "2026-06-30",
     status: "진행중",
   },
   {
     id: 2,
-    unsatisfiedItem: "가격수준",
-    improvementPlan: "원가절감 TF 구성 및 VE 활동 추진",
-    responsibleDept: "구매팀",
+    surveyId: 1,
+    category: "가격",
+    issue: "경쟁사 대비 가격 경쟁력 부족",
+    action: "원가절감 TF 구성 및 VE 활동 추진",
+    responsiblePerson: "구매팀 최구매",
+    dueDate: "2026-07-31",
+    status: "계획",
+  },
+  {
+    id: 3,
+    surveyId: 3,
+    category: "가격",
+    issue: "단가 인하 요청에 대한 대응 필요",
+    action: "공정 개선을 통한 원가 절감 방안 수립",
+    responsiblePerson: "기술팀 박기술",
     dueDate: "2026-08-15",
     status: "계획",
   },
 ];
 
-const initialHistory: SurveyHistory[] = [
-  {
-    id: 1,
-    surveyNo: "CS-2025-001",
-    surveyDate: "2025-06-15",
-    customer: "현대자동차",
-    totalScore: 38,
-    avgScore: 3.8,
-    previousAvg: 3.5,
-    change: 0.3,
-  },
-  {
-    id: 2,
-    surveyNo: "CS-2025-002",
-    surveyDate: "2025-12-10",
-    customer: "현대자동차",
-    totalScore: 40,
-    avgScore: 4.0,
-    previousAvg: 3.8,
-    change: 0.2,
-  },
-  {
-    id: 3,
-    surveyNo: "CS-2026-001",
-    surveyDate: "2026-06-01",
-    customer: "현대자동차",
-    totalScore: 40,
-    avgScore: 4.0,
-    previousAvg: 4.0,
-    change: 0.0,
-  },
-];
-
+// Score labels
 const scoreLabels: Record<number, string> = {
   1: "매우 불만족",
   2: "불만족",
@@ -164,79 +257,119 @@ const scoreLabels: Record<number, string> = {
 };
 
 export default function CustomerSatisfactionPage() {
-  const [activeTab, setActiveTab] = useState("info");
-  const [surveyInfo, setSurveyInfo] = useState<SurveyInfo>(initialSurveyInfo);
-  const [scores, setScores] = useState<SatisfactionScores>(initialScores);
-  const [improvements, setImprovements] =
-    useState<ImprovementAction[]>(initialImprovements);
-  const [history] = useState<SurveyHistory[]>(initialHistory);
+  const [activeTab, setActiveTab] = useState("registration");
+  const [surveys, setSurveys] = useState<SurveyRegistration[]>(initialSurveys);
+  const [scores, setScores] = useState<SurveyScores[]>(initialScores);
+  const [trends] = useState<TrendData[]>(initialTrends);
+  const [improvements, setImprovements] = useState<ImprovementAction[]>(initialImprovements);
+  const [showSurveyForm, setShowSurveyForm] = useState(false);
+  const [showScoreForm, setShowScoreForm] = useState(false);
+  const [showImprovementForm, setShowImprovementForm] = useState(false);
+
+  // New survey form data
+  const [newSurvey, setNewSurvey] = useState({
+    surveyDate: "",
+    surveyYear: "2026",
+    surveyQuarter: "1분기",
+    customer: "",
+    manager: "",
+    surveyMethod: "방문",
+  });
+
+  // New score form data
+  const [newScore, setNewScore] = useState({
+    surveyId: 0,
+    qualityScore: 3,
+    deliveryScore: 3,
+    responseScore: 3,
+    priceScore: 3,
+  });
+
+  // New improvement form data
   const [newImprovement, setNewImprovement] = useState({
-    unsatisfiedItem: "",
-    improvementPlan: "",
-    responsibleDept: "",
+    surveyId: 0,
+    category: "품질",
+    issue: "",
+    action: "",
+    responsiblePerson: "",
     dueDate: "",
     status: "계획",
   });
 
-  // Calculate scores
-  const calculateCategoryScores = () => {
-    const productQuality =
-      (scores.appearance + scores.functionality + scores.reliability) / 3;
-    const delivery =
-      (scores.deliveryCompliance + scores.emergencyResponse) / 2;
-    const service =
-      (scores.technicalSupport + scores.claimResponse + scores.communication) /
-      3;
-    const price = (scores.priceLevel + scores.costReductionCooperation) / 2;
-    const total = Object.values(scores).reduce((sum, val) => sum + val, 0);
-    const average = total / 10;
-
-    return { productQuality, delivery, service, price, total, average };
-  };
-
-  const categoryScores = calculateCategoryScores();
-
-  const handleScoreChange = (key: keyof SatisfactionScores, value: number) => {
-    setScores((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleAddImprovement = () => {
-    if (
-      newImprovement.unsatisfiedItem &&
-      newImprovement.improvementPlan &&
-      newImprovement.responsibleDept
-    ) {
-      setImprovements((prev) => [
-        ...prev,
-        {
-          ...newImprovement,
-          id: prev.length + 1,
-        },
-      ]);
-      setNewImprovement({
-        unsatisfiedItem: "",
-        improvementPlan: "",
-        responsibleDept: "",
-        dueDate: "",
-        status: "계획",
+  // Handle survey registration
+  const handleAddSurvey = () => {
+    if (newSurvey.surveyDate && newSurvey.customer && newSurvey.manager) {
+      const newId = surveys.length + 1;
+      setSurveys([...surveys, { ...newSurvey, id: newId }]);
+      setNewSurvey({
+        surveyDate: "",
+        surveyYear: "2026",
+        surveyQuarter: "1분기",
+        customer: "",
+        manager: "",
+        surveyMethod: "방문",
       });
+      setShowSurveyForm(false);
     }
   };
 
+  // Handle score submission
+  const handleAddScore = () => {
+    if (newScore.surveyId > 0) {
+      const totalScore =
+        newScore.qualityScore +
+        newScore.deliveryScore +
+        newScore.responseScore +
+        newScore.priceScore;
+      const newId = scores.length + 1;
+      setScores([...scores, { ...newScore, id: newId, totalScore }]);
+      setNewScore({
+        surveyId: 0,
+        qualityScore: 3,
+        deliveryScore: 3,
+        responseScore: 3,
+        priceScore: 3,
+      });
+      setShowScoreForm(false);
+    }
+  };
+
+  // Handle improvement action
+  const handleAddImprovement = () => {
+    if (newImprovement.issue && newImprovement.action && newImprovement.responsiblePerson) {
+      const newId = improvements.length + 1;
+      setImprovements([...improvements, { ...newImprovement, id: newId }]);
+      setNewImprovement({
+        surveyId: 0,
+        category: "품질",
+        issue: "",
+        action: "",
+        responsiblePerson: "",
+        dueDate: "",
+        status: "계획",
+      });
+      setShowImprovementForm(false);
+    }
+  };
+
+  // Format date
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "-";
     return new Date(dateStr).toLocaleDateString("ko-KR");
   };
 
+  // Get status badge
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "success" | "warning" | "secondary"> = {
+    const variants: Record<string, "success" | "warning" | "secondary" | "destructive"> = {
       완료: "success",
       진행중: "warning",
       계획: "secondary",
+      지연: "destructive",
     };
     return <Badge variant={variants[status] || "secondary"}>{status}</Badge>;
   };
 
+  // Get score badge
   const getScoreBadge = (score: number) => {
     if (score >= 4.5) return <Badge variant="success">우수</Badge>;
     if (score >= 3.5) return <Badge variant="warning">양호</Badge>;
@@ -244,11 +377,9 @@ export default function CustomerSatisfactionPage() {
     return <Badge variant="destructive">미흡</Badge>;
   };
 
-  const getChangeIndicator = (change: number) => {
-    if (change > 0)
-      return <span className="text-green-600">+{change.toFixed(1)}</span>;
-    if (change < 0) return <span className="text-red-600">{change.toFixed(1)}</span>;
-    return <span className="text-gray-500">-</span>;
+  // Get survey by ID
+  const getSurveyById = (id: number) => {
+    return surveys.find((s) => s.id === id);
   };
 
   // Score selector component
@@ -285,437 +416,507 @@ export default function CustomerSatisfactionPage() {
     </div>
   );
 
+  // Simple bar chart component
+  const SimpleBarChart = ({ data, label }: { data: number; label: string }) => {
+    const percentage = (data / 5) * 100;
+    return (
+      <div className="flex items-center gap-2">
+        <span className="w-20 text-sm">{label}</span>
+        <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary rounded-full transition-all"
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+        <span className="w-10 text-sm font-medium">{data.toFixed(1)}</span>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">고객만족도 조사</h1>
-        <p className="text-muted-foreground">
-          고객만족도 조사 및 분석 관리
-        </p>
+        <p className="text-muted-foreground">고객만족도 조사 현황 관리</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="info" className="flex items-center gap-2">
+          <TabsTrigger value="registration" className="flex items-center gap-2">
             <ClipboardList className="h-4 w-4" />
-            조사 기본정보
+            만족도 조사 등록
           </TabsTrigger>
-          <TabsTrigger value="scoring" className="flex items-center gap-2">
+          <TabsTrigger value="scores" className="flex items-center gap-2">
             <Star className="h-4 w-4" />
-            만족도 평가
+            설문 항목별 점수
           </TabsTrigger>
-          <TabsTrigger value="analysis" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            분석 결과
+          <TabsTrigger value="trends" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            만족도 추이
           </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center gap-2">
-            <History className="h-4 w-4" />
-            조사 이력
+          <TabsTrigger value="improvements" className="flex items-center gap-2">
+            <Wrench className="h-4 w-4" />
+            개선 활동
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab 1: Survey Basic Info */}
-        <TabsContent value="info">
+        {/* Tab 1: Survey Registration */}
+        <TabsContent value="registration">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <ClipboardList className="h-5 w-5" />
-                조사 기본정보
+                만족도 조사 등록
               </CardTitle>
+              <Button onClick={() => setShowSurveyForm(!showSurveyForm)}>
+                <Plus className="mr-2 h-4 w-4" />
+                조사 등록
+              </Button>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="surveyNo">조사번호</Label>
-                  <Input
-                    id="surveyNo"
-                    value={surveyInfo.surveyNo}
-                    onChange={(e) =>
-                      setSurveyInfo({ ...surveyInfo, surveyNo: e.target.value })
-                    }
-                  />
+              {showSurveyForm && (
+                <div className="p-4 border rounded-lg space-y-4 bg-muted/50">
+                  <h4 className="font-medium">신규 조사 등록</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="surveyDate">조사일</Label>
+                      <Input
+                        id="surveyDate"
+                        type="date"
+                        value={newSurvey.surveyDate}
+                        onChange={(e) =>
+                          setNewSurvey({ ...newSurvey, surveyDate: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="surveyYear">조사년도</Label>
+                      <Select
+                        value={newSurvey.surveyYear}
+                        onValueChange={(value) =>
+                          setNewSurvey({ ...newSurvey, surveyYear: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="년도 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {yearOptions.map((year) => (
+                            <SelectItem key={year} value={year}>
+                              {year}년
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="surveyQuarter">분기</Label>
+                      <Select
+                        value={newSurvey.surveyQuarter}
+                        onValueChange={(value) =>
+                          setNewSurvey({ ...newSurvey, surveyQuarter: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="분기 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {quarterOptions.map((quarter) => (
+                            <SelectItem key={quarter} value={quarter}>
+                              {quarter}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="customer">고객사</Label>
+                      <Input
+                        id="customer"
+                        value={newSurvey.customer}
+                        onChange={(e) =>
+                          setNewSurvey({ ...newSurvey, customer: e.target.value })
+                        }
+                        placeholder="예: 현대자동차"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="manager">담당자</Label>
+                      <Input
+                        id="manager"
+                        value={newSurvey.manager}
+                        onChange={(e) =>
+                          setNewSurvey({ ...newSurvey, manager: e.target.value })
+                        }
+                        placeholder="담당자명"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="surveyMethod">조사방법</Label>
+                      <Select
+                        value={newSurvey.surveyMethod}
+                        onValueChange={(value) =>
+                          setNewSurvey({ ...newSurvey, surveyMethod: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="조사방법 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {surveyMethods.map((method) => (
+                            <SelectItem key={method} value={method}>
+                              {method}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setShowSurveyForm(false)}>
+                      취소
+                    </Button>
+                    <Button onClick={handleAddSurvey}>
+                      <Save className="mr-2 h-4 w-4" />
+                      등록
+                    </Button>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="manager">담당자</Label>
-                  <Input
-                    id="manager"
-                    value={surveyInfo.manager}
-                    onChange={(e) =>
-                      setSurveyInfo({ ...surveyInfo, manager: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="surveyPeriodStart">조사기간 (시작)</Label>
-                  <Input
-                    id="surveyPeriodStart"
-                    type="date"
-                    value={surveyInfo.surveyPeriodStart}
-                    onChange={(e) =>
-                      setSurveyInfo({
-                        ...surveyInfo,
-                        surveyPeriodStart: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="surveyPeriodEnd">조사기간 (종료)</Label>
-                  <Input
-                    id="surveyPeriodEnd"
-                    type="date"
-                    value={surveyInfo.surveyPeriodEnd}
-                    onChange={(e) =>
-                      setSurveyInfo({
-                        ...surveyInfo,
-                        surveyPeriodEnd: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="targetCustomer">조사대상고객</Label>
-                <Input
-                  id="targetCustomer"
-                  value={surveyInfo.targetCustomer}
-                  onChange={(e) =>
-                    setSurveyInfo({
-                      ...surveyInfo,
-                      targetCustomer: e.target.value,
-                    })
-                  }
-                  placeholder="조사 대상 고객사명"
-                />
-              </div>
-              <div className="flex justify-end">
-                <Button>정보 저장</Button>
-              </div>
+              )}
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>조사번호</TableHead>
+                    <TableHead>조사일</TableHead>
+                    <TableHead>조사년도/분기</TableHead>
+                    <TableHead>고객사</TableHead>
+                    <TableHead>담당자</TableHead>
+                    <TableHead>조사방법</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {surveys.map((survey) => (
+                    <TableRow key={survey.id}>
+                      <TableCell className="font-medium">CS-{survey.id.toString().padStart(3, "0")}</TableCell>
+                      <TableCell>{formatDate(survey.surveyDate)}</TableCell>
+                      <TableCell>{survey.surveyYear}년 {survey.surveyQuarter}</TableCell>
+                      <TableCell>{survey.customer}</TableCell>
+                      <TableCell>{survey.manager}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{survey.surveyMethod}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Tab 2: Satisfaction Scoring */}
-        <TabsContent value="scoring">
+        {/* Tab 2: Scores by Question */}
+        <TabsContent value="scores">
           <div className="space-y-6">
-            {/* Product Quality */}
             <Card>
-              <CardHeader>
-                <CardTitle>제품품질</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScoreSelector
-                  label="외관"
-                  value={scores.appearance}
-                  onChange={(val) => handleScoreChange("appearance", val)}
-                />
-                <ScoreSelector
-                  label="기능"
-                  value={scores.functionality}
-                  onChange={(val) => handleScoreChange("functionality", val)}
-                />
-                <ScoreSelector
-                  label="신뢰성"
-                  value={scores.reliability}
-                  onChange={(val) => handleScoreChange("reliability", val)}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Delivery */}
-            <Card>
-              <CardHeader>
-                <CardTitle>납기</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScoreSelector
-                  label="납기준수"
-                  value={scores.deliveryCompliance}
-                  onChange={(val) => handleScoreChange("deliveryCompliance", val)}
-                />
-                <ScoreSelector
-                  label="긴급대응"
-                  value={scores.emergencyResponse}
-                  onChange={(val) => handleScoreChange("emergencyResponse", val)}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Service */}
-            <Card>
-              <CardHeader>
-                <CardTitle>서비스</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScoreSelector
-                  label="기술지원"
-                  value={scores.technicalSupport}
-                  onChange={(val) => handleScoreChange("technicalSupport", val)}
-                />
-                <ScoreSelector
-                  label="클레임대응"
-                  value={scores.claimResponse}
-                  onChange={(val) => handleScoreChange("claimResponse", val)}
-                />
-                <ScoreSelector
-                  label="의사소통"
-                  value={scores.communication}
-                  onChange={(val) => handleScoreChange("communication", val)}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Price */}
-            <Card>
-              <CardHeader>
-                <CardTitle>가격</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScoreSelector
-                  label="가격수준"
-                  value={scores.priceLevel}
-                  onChange={(val) => handleScoreChange("priceLevel", val)}
-                />
-                <ScoreSelector
-                  label="원가절감협력"
-                  value={scores.costReductionCooperation}
-                  onChange={(val) =>
-                    handleScoreChange("costReductionCooperation", val)
-                  }
-                />
-              </CardContent>
-            </Card>
-
-            <div className="flex justify-end">
-              <Button>평가 저장</Button>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Tab 3: Analysis Results */}
-        <TabsContent value="analysis">
-          <div className="space-y-6">
-            {/* Score Summary */}
-            <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  조사결과 요약
+                  <Star className="h-5 w-5" />
+                  설문 항목별 점수
                 </CardTitle>
+                <Button onClick={() => setShowScoreForm(!showScoreForm)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  점수 입력
+                </Button>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className="text-center p-4 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">총점</p>
-                    <p className="text-3xl font-bold">
-                      {categoryScores.total}
-                    </p>
-                    <p className="text-sm text-muted-foreground">/ 50점</p>
+              <CardContent className="space-y-6">
+                {showScoreForm && (
+                  <div className="p-4 border rounded-lg space-y-4 bg-muted/50">
+                    <h4 className="font-medium">점수 입력</h4>
+                    <div className="space-y-2">
+                      <Label>조사 선택</Label>
+                      <Select
+                        value={newScore.surveyId.toString()}
+                        onValueChange={(value) =>
+                          setNewScore({ ...newScore, surveyId: parseInt(value) })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="조사 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {surveys.map((survey) => (
+                            <SelectItem key={survey.id} value={survey.id.toString()}>
+                              CS-{survey.id.toString().padStart(3, "0")} - {survey.customer} ({survey.surveyYear} {survey.surveyQuarter})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <ScoreSelector
+                        label="품질 만족도"
+                        value={newScore.qualityScore}
+                        onChange={(val) => setNewScore({ ...newScore, qualityScore: val })}
+                      />
+                      <ScoreSelector
+                        label="납기 만족도"
+                        value={newScore.deliveryScore}
+                        onChange={(val) => setNewScore({ ...newScore, deliveryScore: val })}
+                      />
+                      <ScoreSelector
+                        label="대응 만족도"
+                        value={newScore.responseScore}
+                        onChange={(val) => setNewScore({ ...newScore, responseScore: val })}
+                      />
+                      <ScoreSelector
+                        label="가격 만족도"
+                        value={newScore.priceScore}
+                        onChange={(val) => setNewScore({ ...newScore, priceScore: val })}
+                      />
+                    </div>
+                    <div className="p-3 bg-muted rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">종합 점수</span>
+                        <span className="text-2xl font-bold">
+                          {newScore.qualityScore + newScore.deliveryScore + newScore.responseScore + newScore.priceScore} / 20
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-sm text-muted-foreground">평균</span>
+                        <span className="text-lg font-medium">
+                          {((newScore.qualityScore + newScore.deliveryScore + newScore.responseScore + newScore.priceScore) / 4).toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setShowScoreForm(false)}>
+                        취소
+                      </Button>
+                      <Button onClick={handleAddScore}>
+                        <Save className="mr-2 h-4 w-4" />
+                        저장
+                      </Button>
+                    </div>
                   </div>
-                  <div className="text-center p-4 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">평균점수</p>
-                    <p className="text-3xl font-bold">
-                      {categoryScores.average.toFixed(1)}
-                    </p>
-                    {getScoreBadge(categoryScores.average)}
-                  </div>
-                  <div className="text-center p-4 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">전년 평균</p>
-                    <p className="text-3xl font-bold">4.0</p>
-                  </div>
-                  <div className="text-center p-4 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">전년대비</p>
-                    <p className="text-3xl font-bold">
-                      {getChangeIndicator(categoryScores.average - 4.0)}
-                    </p>
-                  </div>
-                </div>
+                )}
 
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>평가항목</TableHead>
-                      <TableHead>세부항목</TableHead>
-                      <TableHead className="text-center">점수</TableHead>
-                      <TableHead className="text-center">카테고리 평균</TableHead>
+                      <TableHead>조사번호</TableHead>
+                      <TableHead>고객사</TableHead>
+                      <TableHead className="text-center">품질 만족도</TableHead>
+                      <TableHead className="text-center">납기 만족도</TableHead>
+                      <TableHead className="text-center">대응 만족도</TableHead>
+                      <TableHead className="text-center">가격 만족도</TableHead>
+                      <TableHead className="text-center">종합 점수</TableHead>
+                      <TableHead className="text-center">평균</TableHead>
                       <TableHead className="text-center">평가</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    <TableRow>
-                      <TableCell rowSpan={3} className="font-medium">
-                        제품품질
-                      </TableCell>
-                      <TableCell>외관</TableCell>
-                      <TableCell className="text-center">{scores.appearance}</TableCell>
-                      <TableCell rowSpan={3} className="text-center font-medium">
-                        {categoryScores.productQuality.toFixed(1)}
-                      </TableCell>
-                      <TableCell rowSpan={3} className="text-center">
-                        {getScoreBadge(categoryScores.productQuality)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>기능</TableCell>
-                      <TableCell className="text-center">{scores.functionality}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>신뢰성</TableCell>
-                      <TableCell className="text-center">{scores.reliability}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell rowSpan={2} className="font-medium">
-                        납기
-                      </TableCell>
-                      <TableCell>납기준수</TableCell>
-                      <TableCell className="text-center">{scores.deliveryCompliance}</TableCell>
-                      <TableCell rowSpan={2} className="text-center font-medium">
-                        {categoryScores.delivery.toFixed(1)}
-                      </TableCell>
-                      <TableCell rowSpan={2} className="text-center">
-                        {getScoreBadge(categoryScores.delivery)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>긴급대응</TableCell>
-                      <TableCell className="text-center">{scores.emergencyResponse}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell rowSpan={3} className="font-medium">
-                        서비스
-                      </TableCell>
-                      <TableCell>기술지원</TableCell>
-                      <TableCell className="text-center">{scores.technicalSupport}</TableCell>
-                      <TableCell rowSpan={3} className="text-center font-medium">
-                        {categoryScores.service.toFixed(1)}
-                      </TableCell>
-                      <TableCell rowSpan={3} className="text-center">
-                        {getScoreBadge(categoryScores.service)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>클레임대응</TableCell>
-                      <TableCell className="text-center">{scores.claimResponse}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>의사소통</TableCell>
-                      <TableCell className="text-center">{scores.communication}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell rowSpan={2} className="font-medium">
-                        가격
-                      </TableCell>
-                      <TableCell>가격수준</TableCell>
-                      <TableCell className="text-center">{scores.priceLevel}</TableCell>
-                      <TableCell rowSpan={2} className="text-center font-medium">
-                        {categoryScores.price.toFixed(1)}
-                      </TableCell>
-                      <TableCell rowSpan={2} className="text-center">
-                        {getScoreBadge(categoryScores.price)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>원가절감협력</TableCell>
-                      <TableCell className="text-center">
-                        {scores.costReductionCooperation}
-                      </TableCell>
-                    </TableRow>
+                    {scores.map((score) => {
+                      const survey = getSurveyById(score.surveyId);
+                      const avg = score.totalScore / 4;
+                      return (
+                        <TableRow key={score.id}>
+                          <TableCell className="font-medium">
+                            CS-{score.surveyId.toString().padStart(3, "0")}
+                          </TableCell>
+                          <TableCell>{survey?.customer || "-"}</TableCell>
+                          <TableCell className="text-center">{score.qualityScore}</TableCell>
+                          <TableCell className="text-center">{score.deliveryScore}</TableCell>
+                          <TableCell className="text-center">{score.responseScore}</TableCell>
+                          <TableCell className="text-center">{score.priceScore}</TableCell>
+                          <TableCell className="text-center font-medium">{score.totalScore}</TableCell>
+                          <TableCell className="text-center">{avg.toFixed(1)}</TableCell>
+                          <TableCell className="text-center">{getScoreBadge(avg)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </CardContent>
             </Card>
+          </div>
+        </TabsContent>
 
-            {/* Improvement Actions */}
+        {/* Tab 3: Satisfaction Trends */}
+        <TabsContent value="trends">
+          <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5" />
-                  개선조치
+                  <TrendingUp className="h-5 w-5" />
+                  분기별 만족도 추이
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {trends.map((trend) => (
+                    <div key={trend.id} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-medium">{trend.year}년 {trend.quarter}</h4>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">종합 평균:</span>
+                          <span className="text-lg font-bold">{trend.overallAvg.toFixed(1)}</span>
+                          {getScoreBadge(trend.overallAvg)}
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <SimpleBarChart data={trend.qualityAvg} label="품질" />
+                        <SimpleBarChart data={trend.deliveryAvg} label="납기" />
+                        <SimpleBarChart data={trend.responseAvg} label="대응" />
+                        <SimpleBarChart data={trend.priceAvg} label="가격" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  년간 추이 요약
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>불만족항목</TableHead>
-                      <TableHead>개선계획</TableHead>
-                      <TableHead>담당부서</TableHead>
-                      <TableHead>완료예정일</TableHead>
-                      <TableHead>상태</TableHead>
+                      <TableHead>기간</TableHead>
+                      <TableHead className="text-center">품질</TableHead>
+                      <TableHead className="text-center">납기</TableHead>
+                      <TableHead className="text-center">대응</TableHead>
+                      <TableHead className="text-center">가격</TableHead>
+                      <TableHead className="text-center">종합 평균</TableHead>
+                      <TableHead className="text-center">평가</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {improvements.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">
-                          {item.unsatisfiedItem}
-                        </TableCell>
-                        <TableCell>{item.improvementPlan}</TableCell>
-                        <TableCell>{item.responsibleDept}</TableCell>
-                        <TableCell>{formatDate(item.dueDate)}</TableCell>
-                        <TableCell>{getStatusBadge(item.status)}</TableCell>
+                    {trends.map((trend) => (
+                      <TableRow key={trend.id}>
+                        <TableCell className="font-medium">{trend.year}년 {trend.quarter}</TableCell>
+                        <TableCell className="text-center">{trend.qualityAvg.toFixed(1)}</TableCell>
+                        <TableCell className="text-center">{trend.deliveryAvg.toFixed(1)}</TableCell>
+                        <TableCell className="text-center">{trend.responseAvg.toFixed(1)}</TableCell>
+                        <TableCell className="text-center">{trend.priceAvg.toFixed(1)}</TableCell>
+                        <TableCell className="text-center font-medium">{trend.overallAvg.toFixed(1)}</TableCell>
+                        <TableCell className="text-center">{getScoreBadge(trend.overallAvg)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
-                <div className="mt-6 p-4 border rounded-lg space-y-4">
-                  <h4 className="font-medium">개선조치 추가</h4>
+        {/* Tab 4: Improvement Actions */}
+        <TabsContent value="improvements">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Wrench className="h-5 w-5" />
+                개선 활동
+              </CardTitle>
+              <Button onClick={() => setShowImprovementForm(!showImprovementForm)}>
+                <Plus className="mr-2 h-4 w-4" />
+                개선활동 등록
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {showImprovementForm && (
+                <div className="p-4 border rounded-lg space-y-4 bg-muted/50">
+                  <h4 className="font-medium">개선활동 등록</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>불만족항목</Label>
-                      <Input
-                        value={newImprovement.unsatisfiedItem}
-                        onChange={(e) =>
-                          setNewImprovement({
-                            ...newImprovement,
-                            unsatisfiedItem: e.target.value,
-                          })
+                      <Label>관련 조사</Label>
+                      <Select
+                        value={newImprovement.surveyId.toString()}
+                        onValueChange={(value) =>
+                          setNewImprovement({ ...newImprovement, surveyId: parseInt(value) })
                         }
-                        placeholder="개선이 필요한 항목"
-                      />
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="조사 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {surveys.map((survey) => (
+                            <SelectItem key={survey.id} value={survey.id.toString()}>
+                              CS-{survey.id.toString().padStart(3, "0")} - {survey.customer}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>담당부서</Label>
-                      <Input
-                        value={newImprovement.responsibleDept}
-                        onChange={(e) =>
-                          setNewImprovement({
-                            ...newImprovement,
-                            responsibleDept: e.target.value,
-                          })
+                      <Label>개선 영역</Label>
+                      <Select
+                        value={newImprovement.category}
+                        onValueChange={(value) =>
+                          setNewImprovement({ ...newImprovement, category: value })
                         }
-                        placeholder="담당 부서"
-                      />
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="영역 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="품질">품질</SelectItem>
+                          <SelectItem value="납기">납기</SelectItem>
+                          <SelectItem value="대응">대응</SelectItem>
+                          <SelectItem value="가격">가격</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>개선계획</Label>
+                    <Label>개선 필요 사항</Label>
                     <Textarea
-                      value={newImprovement.improvementPlan}
+                      value={newImprovement.issue}
                       onChange={(e) =>
-                        setNewImprovement({
-                          ...newImprovement,
-                          improvementPlan: e.target.value,
-                        })
+                        setNewImprovement({ ...newImprovement, issue: e.target.value })
                       }
-                      placeholder="개선 계획 상세 내용"
+                      placeholder="고객 불만족 사항 또는 개선이 필요한 내용"
                       rows={2}
                     />
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>개선 조치 계획</Label>
+                    <Textarea
+                      value={newImprovement.action}
+                      onChange={(e) =>
+                        setNewImprovement({ ...newImprovement, action: e.target.value })
+                      }
+                      placeholder="구체적인 개선 조치 계획"
+                      rows={2}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label>완료예정일</Label>
+                      <Label>담당자</Label>
+                      <Input
+                        value={newImprovement.responsiblePerson}
+                        onChange={(e) =>
+                          setNewImprovement({ ...newImprovement, responsiblePerson: e.target.value })
+                        }
+                        placeholder="부서 담당자명"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>완료 예정일</Label>
                       <Input
                         type="date"
                         value={newImprovement.dueDate}
                         onChange={(e) =>
-                          setNewImprovement({
-                            ...newImprovement,
-                            dueDate: e.target.value,
-                          })
+                          setNewImprovement({ ...newImprovement, dueDate: e.target.value })
                         }
                       />
                     </div>
@@ -734,63 +935,49 @@ export default function CustomerSatisfactionPage() {
                           <SelectItem value="계획">계획</SelectItem>
                           <SelectItem value="진행중">진행중</SelectItem>
                           <SelectItem value="완료">완료</SelectItem>
+                          <SelectItem value="지연">지연</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
-                  <div className="flex justify-end">
-                    <Button onClick={handleAddImprovement}>추가</Button>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setShowImprovementForm(false)}>
+                      취소
+                    </Button>
+                    <Button onClick={handleAddImprovement}>
+                      <Save className="mr-2 h-4 w-4" />
+                      등록
+                    </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+              )}
 
-        {/* Tab 4: Survey History */}
-        <TabsContent value="history">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <History className="h-5 w-5" />
-                조사 이력
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>조사번호</TableHead>
-                    <TableHead>조사일자</TableHead>
-                    <TableHead>고객사</TableHead>
-                    <TableHead className="text-center">총점</TableHead>
-                    <TableHead className="text-center">평균</TableHead>
-                    <TableHead className="text-center">전회 평균</TableHead>
-                    <TableHead className="text-center">변동</TableHead>
-                    <TableHead className="text-center">평가</TableHead>
+                    <TableHead>개선 영역</TableHead>
+                    <TableHead>개선 필요 사항</TableHead>
+                    <TableHead>개선 조치 계획</TableHead>
+                    <TableHead>담당자</TableHead>
+                    <TableHead>완료 예정일</TableHead>
+                    <TableHead>상태</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {history.map((item) => (
+                  {improvements.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">
-                        {item.surveyNo}
+                        CS-{item.surveyId.toString().padStart(3, "0")}
                       </TableCell>
-                      <TableCell>{formatDate(item.surveyDate)}</TableCell>
-                      <TableCell>{item.customer}</TableCell>
-                      <TableCell className="text-center">{item.totalScore}</TableCell>
-                      <TableCell className="text-center">
-                        {item.avgScore.toFixed(1)}
+                      <TableCell>
+                        <Badge variant="secondary">{item.category}</Badge>
                       </TableCell>
-                      <TableCell className="text-center">
-                        {item.previousAvg.toFixed(1)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {getChangeIndicator(item.change)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {getScoreBadge(item.avgScore)}
-                      </TableCell>
+                      <TableCell className="max-w-[200px]">{item.issue}</TableCell>
+                      <TableCell className="max-w-[200px]">{item.action}</TableCell>
+                      <TableCell>{item.responsiblePerson}</TableCell>
+                      <TableCell>{formatDate(item.dueDate)}</TableCell>
+                      <TableCell>{getStatusBadge(item.status)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
