@@ -24,6 +24,7 @@ import {
   ArrowUpRight,
   ArrowDownRight
 } from "lucide-react";
+import { getParts, getEquipments } from "@/lib/master-data";
 
 // 생산계획 항목 타입
 interface ProductionPlanItem {
@@ -75,6 +76,13 @@ interface AnnualTrendData {
 
 export default function ProductionSchedulePage() {
   const [activeTab, setActiveTab] = useState("plan-entry");
+
+  // 기준정보에서 품목 및 설비 데이터 가져오기
+  const parts = getParts();
+  const equipments = getEquipments();
+
+  // 설비 데이터에서 라인 목록 추출 (중복 제거)
+  const lineOptions = [...new Set(equipments.map(eq => eq.line))];
 
   // 생산계획 입력 상태
   const [planItems, setPlanItems] = useState<ProductionPlanItem[]>([
@@ -367,8 +375,7 @@ export default function ProductionSchedulePage() {
                     <TableRow>
                       <TableHead className="min-w-[60px] text-center">No.</TableHead>
                       <TableHead className="min-w-[100px]">계획년월</TableHead>
-                      <TableHead className="min-w-[120px]">품목명</TableHead>
-                      <TableHead className="min-w-[120px]">품번</TableHead>
+                      <TableHead colSpan={2} className="min-w-[200px]">품목</TableHead>
                       <TableHead className="min-w-[100px]">고객사</TableHead>
                       <TableHead className="min-w-[80px]">차종</TableHead>
                       {monthNames.map((month, index) => (
@@ -393,31 +400,44 @@ export default function ProductionSchedulePage() {
                             className="min-w-[120px]"
                           />
                         </TableCell>
-                        <TableCell>
-                          <Input
-                            value={item.itemName}
-                            onChange={(e) => updatePlanItem(item.id, "itemName", e.target.value)}
-                            placeholder="품목명"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
+                        <TableCell colSpan={2}>
+                          <Select
                             value={item.itemNo}
-                            onChange={(e) => updatePlanItem(item.id, "itemNo", e.target.value)}
-                            placeholder="품번"
-                          />
+                            onValueChange={(v) => {
+                              const selectedPart = parts.find(p => p.code === v);
+                              if (selectedPart) {
+                                updatePlanItem(item.id, "itemNo", selectedPart.code);
+                                updatePlanItem(item.id, "itemName", selectedPart.name);
+                                updatePlanItem(item.id, "customerName", selectedPart.customer);
+                                updatePlanItem(item.id, "vehicleModel", selectedPart.vehicleModel);
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="min-w-[200px]">
+                              <SelectValue placeholder="품목 선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {parts.map((part) => (
+                                <SelectItem key={part.code} value={part.code}>
+                                  {part.code} - {part.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>
                           <Input
                             value={item.customerName}
-                            onChange={(e) => updatePlanItem(item.id, "customerName", e.target.value)}
+                            readOnly
+                            className="bg-muted"
                             placeholder="고객사"
                           />
                         </TableCell>
                         <TableCell>
                           <Input
                             value={item.vehicleModel}
-                            onChange={(e) => updatePlanItem(item.id, "vehicleModel", e.target.value)}
+                            readOnly
+                            className="bg-muted"
                             placeholder="차종"
                           />
                         </TableCell>
@@ -525,8 +545,7 @@ export default function ProductionSchedulePage() {
                       <TableHead className="min-w-[60px] text-center">No.</TableHead>
                       <TableHead className="min-w-[130px]">날짜</TableHead>
                       <TableHead className="min-w-[60px] text-center">주차</TableHead>
-                      <TableHead className="min-w-[120px]">품목명</TableHead>
-                      <TableHead className="min-w-[120px]">품번</TableHead>
+                      <TableHead colSpan={2} className="min-w-[200px]">품목</TableHead>
                       <TableHead className="min-w-[100px]">라인명</TableHead>
                       <TableHead className="min-w-[80px]">근무조</TableHead>
                       <TableHead className="min-w-[100px] text-right">목표수량</TableHead>
@@ -562,19 +581,28 @@ export default function ProductionSchedulePage() {
                             </SelectContent>
                           </Select>
                         </TableCell>
-                        <TableCell>
-                          <Input
-                            value={item.itemName}
-                            onChange={(e) => updateDailyPlanItem(item.id, "itemName", e.target.value)}
-                            placeholder="품목명"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
+                        <TableCell colSpan={2}>
+                          <Select
                             value={item.itemNo}
-                            onChange={(e) => updateDailyPlanItem(item.id, "itemNo", e.target.value)}
-                            placeholder="품번"
-                          />
+                            onValueChange={(v) => {
+                              const selectedPart = parts.find(p => p.code === v);
+                              if (selectedPart) {
+                                updateDailyPlanItem(item.id, "itemNo", selectedPart.code);
+                                updateDailyPlanItem(item.id, "itemName", selectedPart.name);
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="min-w-[200px]">
+                              <SelectValue placeholder="품목 선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {parts.map((part) => (
+                                <SelectItem key={part.code} value={part.code}>
+                                  {part.code} - {part.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>
                           <Select
@@ -585,10 +613,11 @@ export default function ProductionSchedulePage() {
                               <SelectValue placeholder="라인 선택" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Line-A">Line-A</SelectItem>
-                              <SelectItem value="Line-B">Line-B</SelectItem>
-                              <SelectItem value="Line-C">Line-C</SelectItem>
-                              <SelectItem value="Line-D">Line-D</SelectItem>
+                              {lineOptions.map((line) => (
+                                <SelectItem key={line} value={line}>
+                                  {line}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </TableCell>

@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Save, CheckCircle, XCircle, AlertTriangle, History, ClipboardCheck, Wrench } from "lucide-react";
+import { Save, CheckCircle, XCircle, AlertTriangle, History, ClipboardCheck, Wrench } from "lucide-react";
+import { getEquipments, type Equipment as MasterEquipment } from "@/lib/master-data";
 
 // Types
 interface CheckItem {
@@ -46,29 +47,78 @@ interface CheckHistory {
   overallStatus: "정상" | "이상";
 }
 
-// Initial check items for equipment
-const initialCheckItems: Omit<CheckItem, "result" | "remark">[] = [
-  { id: 1, equipmentName: "사출기 #1", checkPart: "유압부", checkCategory: "외관", checkStandard: "누유 없을 것" },
-  { id: 2, equipmentName: "사출기 #1", checkPart: "유압부", checkCategory: "작동", checkStandard: "정상 압력 유지" },
-  { id: 3, equipmentName: "사출기 #1", checkPart: "냉각부", checkCategory: "외관", checkStandard: "호스 손상 없을 것" },
-  { id: 4, equipmentName: "사출기 #1", checkPart: "냉각부", checkCategory: "청소", checkStandard: "이물질 없을 것" },
-  { id: 5, equipmentName: "사출기 #2", checkPart: "전기부", checkCategory: "외관", checkStandard: "배선 손상 없을 것" },
-  { id: 6, equipmentName: "사출기 #2", checkPart: "전기부", checkCategory: "작동", checkStandard: "정상 작동" },
-  { id: 7, equipmentName: "도장부스 #1", checkPart: "환기부", checkCategory: "작동", checkStandard: "정상 풍량" },
-  { id: 8, equipmentName: "도장부스 #1", checkPart: "필터", checkCategory: "청소", checkStandard: "막힘 없을 것" },
-  { id: 9, equipmentName: "도장부스 #1", checkPart: "스프레이건", checkCategory: "급유", checkStandard: "윤활 양호" },
-  { id: 10, equipmentName: "조립라인 #1", checkPart: "컨베이어", checkCategory: "외관", checkStandard: "벨트 손상 없을 것" },
-  { id: 11, equipmentName: "조립라인 #1", checkPart: "컨베이어", checkCategory: "작동", checkStandard: "정상 속도" },
-  { id: 12, equipmentName: "조립라인 #1", checkPart: "구동부", checkCategory: "급유", checkStandard: "오일레벨 적정" },
+// Get equipment data from master data
+const masterEquipments = getEquipments();
+
+// Define check items by equipment type
+const checkItemsByType: Record<string, { checkPart: string; checkCategory: string; checkStandard: string }[]> = {
+  "사출기": [
+    { checkPart: "유압부", checkCategory: "외관", checkStandard: "누유 없을 것" },
+    { checkPart: "유압부", checkCategory: "작동", checkStandard: "정상 압력 유지" },
+    { checkPart: "냉각부", checkCategory: "외관", checkStandard: "호스 손상 없을 것" },
+    { checkPart: "냉각부", checkCategory: "청소", checkStandard: "이물질 없을 것" },
+    { checkPart: "전기부", checkCategory: "외관", checkStandard: "배선 손상 없을 것" },
+  ],
+  "도장설비": [
+    { checkPart: "환기부", checkCategory: "작동", checkStandard: "정상 풍량" },
+    { checkPart: "필터", checkCategory: "청소", checkStandard: "막힘 없을 것" },
+    { checkPart: "스프레이건", checkCategory: "급유", checkStandard: "윤활 양호" },
+  ],
+  "건조설비": [
+    { checkPart: "히터부", checkCategory: "작동", checkStandard: "정상 온도 유지" },
+    { checkPart: "환기팬", checkCategory: "작동", checkStandard: "정상 회전" },
+    { checkPart: "온도센서", checkCategory: "작동", checkStandard: "정상 감지" },
+  ],
+  "컨베이어": [
+    { checkPart: "벨트", checkCategory: "외관", checkStandard: "손상 없을 것" },
+    { checkPart: "구동부", checkCategory: "작동", checkStandard: "정상 속도" },
+    { checkPart: "구동부", checkCategory: "급유", checkStandard: "오일레벨 적정" },
+  ],
+};
+
+// Default check items for equipment types not explicitly defined
+const defaultCheckItems = [
+  { checkPart: "외관", checkCategory: "외관", checkStandard: "손상 없을 것" },
+  { checkPart: "작동부", checkCategory: "작동", checkStandard: "정상 작동" },
+  { checkPart: "윤활부", checkCategory: "급유", checkStandard: "윤활 상태 양호" },
 ];
 
-// Sample history data
+// Generate initial check items from master equipment data
+const generateCheckItems = (equipments: MasterEquipment[]): Omit<CheckItem, "result" | "remark">[] => {
+  let id = 1;
+  const items: Omit<CheckItem, "result" | "remark">[] = [];
+
+  equipments.forEach((eq) => {
+    const typeCheckItems = checkItemsByType[eq.type] || defaultCheckItems;
+    typeCheckItems.forEach((checkItem) => {
+      items.push({
+        id: id++,
+        equipmentName: eq.name,
+        checkPart: checkItem.checkPart,
+        checkCategory: checkItem.checkCategory,
+        checkStandard: checkItem.checkStandard,
+      });
+    });
+  });
+
+  return items;
+};
+
+const initialCheckItems = generateCheckItems(masterEquipments);
+
+// Get unique lines from master equipment for dropdown
+const equipmentLines = [...new Set(masterEquipments.map(eq => eq.line))];
+
+// Sample history data using master data lines
+const firstHistoryLine = equipmentLines[0] || "사출라인-A";
+const secondHistoryLine = equipmentLines[1] || "사출라인-B";
+const thirdHistoryLine = equipmentLines[2] || "도장라인";
 const sampleHistory: CheckHistory[] = [
-  { id: 1, checkDate: "2026-06-08", lineProcess: "사출동/사출공정", checker: "김철수", totalItems: 12, normalCount: 12, abnormalCount: 0, naCount: 0, overallStatus: "정상" },
-  { id: 2, checkDate: "2026-06-07", lineProcess: "사출동/사출공정", checker: "박영희", totalItems: 12, normalCount: 11, abnormalCount: 1, naCount: 0, overallStatus: "이상" },
-  { id: 3, checkDate: "2026-06-06", lineProcess: "도장동/도장공정", checker: "이민호", totalItems: 12, normalCount: 12, abnormalCount: 0, naCount: 0, overallStatus: "정상" },
-  { id: 4, checkDate: "2026-06-05", lineProcess: "조립동/조립공정", checker: "최지영", totalItems: 12, normalCount: 10, abnormalCount: 2, naCount: 0, overallStatus: "이상" },
-  { id: 5, checkDate: "2026-06-04", lineProcess: "사출동/사출공정", checker: "김철수", totalItems: 12, normalCount: 12, abnormalCount: 0, naCount: 0, overallStatus: "정상" },
+  { id: 1, checkDate: "2026-06-08", lineProcess: firstHistoryLine, checker: "김철수", totalItems: initialCheckItems.length, normalCount: initialCheckItems.length, abnormalCount: 0, naCount: 0, overallStatus: "정상" },
+  { id: 2, checkDate: "2026-06-07", lineProcess: firstHistoryLine, checker: "박영희", totalItems: initialCheckItems.length, normalCount: initialCheckItems.length - 1, abnormalCount: 1, naCount: 0, overallStatus: "이상" },
+  { id: 3, checkDate: "2026-06-06", lineProcess: thirdHistoryLine, checker: "이민호", totalItems: initialCheckItems.length, normalCount: initialCheckItems.length, abnormalCount: 0, naCount: 0, overallStatus: "정상" },
+  { id: 4, checkDate: "2026-06-05", lineProcess: secondHistoryLine, checker: "최지영", totalItems: initialCheckItems.length, normalCount: initialCheckItems.length - 2, abnormalCount: 2, naCount: 0, overallStatus: "이상" },
+  { id: 5, checkDate: "2026-06-04", lineProcess: firstHistoryLine, checker: "김철수", totalItems: initialCheckItems.length, normalCount: initialCheckItems.length, abnormalCount: 0, naCount: 0, overallStatus: "정상" },
 ];
 
 export default function EquipmentCheckPage() {
@@ -257,9 +307,9 @@ export default function EquipmentCheckPage() {
                       <SelectValue placeholder="선택" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="사출동/사출공정">사출동/사출공정</SelectItem>
-                      <SelectItem value="도장동/도장공정">도장동/도장공정</SelectItem>
-                      <SelectItem value="조립동/조립공정">조립동/조립공정</SelectItem>
+                      {equipmentLines.map((line) => (
+                        <SelectItem key={line} value={line}>{line}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -480,9 +530,9 @@ export default function EquipmentCheckPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">전체</SelectItem>
-                      <SelectItem value="사출동">사출동</SelectItem>
-                      <SelectItem value="도장동">도장동</SelectItem>
-                      <SelectItem value="조립동">조립동</SelectItem>
+                      {equipmentLines.map((line) => (
+                        <SelectItem key={line} value={line}>{line}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

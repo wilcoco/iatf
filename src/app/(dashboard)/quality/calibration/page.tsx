@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,7 @@ import {
   Trash2,
   Edit,
 } from "lucide-react";
+import { getInstruments, type Instrument as MasterInstrument } from "@/lib/master-data";
 
 // Types
 interface Instrument {
@@ -73,74 +74,33 @@ interface CalibrationPlan {
   plannedMonth: number;
 }
 
-// Sample data
-const sampleInstruments: Instrument[] = [
-  {
-    id: 1,
-    code: "CAL-001",
-    name: "버니어캘리퍼스",
-    specification: "0-150mm, 0.02mm",
-    manufacturer: "Mitutoyo",
-    model: "530-312",
-    calibrationCycle: 12,
-    department: "품질관리팀",
-    responsiblePerson: "김검사",
-    initialCalibrationDate: "2024-01-15",
-    status: "active",
-  },
-  {
-    id: 2,
-    code: "CAL-002",
-    name: "마이크로미터",
-    specification: "0-25mm, 0.001mm",
-    manufacturer: "Mitutoyo",
-    model: "293-230",
-    calibrationCycle: 12,
-    department: "품질관리팀",
-    responsiblePerson: "김검사",
-    initialCalibrationDate: "2024-02-20",
-    status: "active",
-  },
-  {
-    id: 3,
-    code: "CAL-003",
-    name: "디지털온도계",
-    specification: "-50~300C, 0.1C",
-    manufacturer: "Fluke",
-    model: "52-II",
-    calibrationCycle: 6,
-    department: "생산팀",
-    responsiblePerson: "박생산",
-    initialCalibrationDate: "2024-03-10",
-    status: "active",
-  },
-  {
-    id: 4,
-    code: "CAL-004",
-    name: "토크렌치",
-    specification: "10-100Nm",
-    manufacturer: "Tohnichi",
-    model: "QL100N4",
-    calibrationCycle: 6,
-    department: "생산팀",
-    responsiblePerson: "이조립",
-    initialCalibrationDate: "2024-04-05",
-    status: "active",
-  },
-  {
-    id: 5,
-    code: "CAL-005",
-    name: "경도계",
-    specification: "HRC 20-70",
-    manufacturer: "Mitutoyo",
-    model: "HR-320MS",
-    calibrationCycle: 12,
-    department: "품질관리팀",
-    responsiblePerson: "김검사",
-    initialCalibrationDate: "2024-05-01",
-    status: "active",
-  },
-];
+// Helper function to convert master data instruments to local format
+function convertMasterInstruments(masterInstruments: MasterInstrument[]): Instrument[] {
+  const statusMap: Record<MasterInstrument["status"], Instrument["status"]> = {
+    "사용중": "active",
+    "검교정중": "active", // Treat as active for planning purposes
+    "보관": "inactive",
+    "폐기": "disposed",
+  };
+
+  return masterInstruments.map((inst) => ({
+    id: inst.id,
+    code: inst.code,
+    name: inst.name,
+    specification: inst.spec,
+    manufacturer: inst.manufacturer,
+    model: inst.model,
+    calibrationCycle: inst.calibrationCycle,
+    department: inst.location, // Use location as department
+    responsiblePerson: "", // Not available in master data
+    initialCalibrationDate: inst.lastCalibrationDate,
+    status: statusMap[inst.status] || "active",
+  }));
+}
+
+// Get initial instruments from master data
+const masterInstrumentData = getInstruments();
+const sampleInstruments: Instrument[] = convertMasterInstruments(masterInstrumentData);
 
 const sampleRecords: CalibrationRecord[] = [
   {

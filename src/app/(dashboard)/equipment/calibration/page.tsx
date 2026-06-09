@@ -32,6 +32,7 @@ import {
   FileText,
   Settings,
 } from "lucide-react";
+import { getInstruments, type Instrument as MasterInstrument } from "@/lib/master-data";
 
 // Types
 interface Equipment {
@@ -62,99 +63,38 @@ interface CalibrationHistory {
   remarks: string; // 비고
 }
 
-// Sample data
-const initialEquipments: Equipment[] = [
-  {
-    id: 1,
-    managementNo: "GA-001",
-    equipmentName: "버니어캘리퍼스",
-    model: "CD-15CPX",
-    manufacturer: "Mitutoyo",
-    purchaseDate: "2022-03-15",
-    measurementRange: "0-150mm",
-    accuracy: "0.02mm",
-    department: "품질관리부",
-    storageLocation: "측정실 A-1",
-    calibrationCycle: 12,
-    lastCalibrationDate: "2026-01-15",
-    nextCalibrationDate: "2027-01-15",
-    calibrationAgency: "사외",
-    certificateNo: "CAL-2026-001",
-    status: "사용중",
-  },
-  {
-    id: 2,
-    managementNo: "GA-002",
-    equipmentName: "마이크로미터",
-    model: "MDC-25MX",
-    manufacturer: "Mitutoyo",
-    purchaseDate: "2021-06-20",
-    measurementRange: "0-25mm",
-    accuracy: "0.001mm",
-    department: "생산기술부",
-    storageLocation: "측정실 A-2",
-    calibrationCycle: 12,
-    lastCalibrationDate: "2026-02-20",
-    nextCalibrationDate: "2027-02-20",
-    calibrationAgency: "사내",
-    certificateNo: "CAL-2026-002",
-    status: "사용중",
-  },
-  {
-    id: 3,
-    managementNo: "GA-003",
-    equipmentName: "다이얼게이지",
-    model: "ID-C112XB",
-    manufacturer: "Mitutoyo",
-    purchaseDate: "2020-11-10",
-    measurementRange: "0-12.7mm",
-    accuracy: "0.01mm",
-    department: "품질관리부",
-    storageLocation: "측정실 B-1",
-    calibrationCycle: 6,
-    lastCalibrationDate: "2026-03-10",
-    nextCalibrationDate: "2026-09-10",
-    calibrationAgency: "사외",
-    certificateNo: "CAL-2026-003",
-    status: "교정중",
-  },
-  {
-    id: 4,
-    managementNo: "GA-004",
-    equipmentName: "3차원측정기",
-    model: "CRYSTA-Apex S544",
-    manufacturer: "Mitutoyo",
-    purchaseDate: "2019-05-01",
-    measurementRange: "500x400x400mm",
-    accuracy: "1.7um",
-    department: "품질관리부",
-    storageLocation: "항온항습실",
-    calibrationCycle: 12,
-    lastCalibrationDate: "2025-12-01",
-    nextCalibrationDate: "2026-12-01",
-    calibrationAgency: "사외",
-    certificateNo: "CAL-2025-012",
-    status: "사용중",
-  },
-  {
-    id: 5,
-    managementNo: "GA-005",
-    equipmentName: "경도계",
-    model: "HR-320MS",
-    manufacturer: "Mitutoyo",
-    purchaseDate: "2023-02-15",
-    measurementRange: "HRC 20-70",
-    accuracy: "0.5 HRC",
-    department: "생산기술부",
-    storageLocation: "시험실",
-    calibrationCycle: 12,
-    lastCalibrationDate: "2026-02-15",
-    nextCalibrationDate: "2027-02-15",
-    calibrationAgency: "사외",
-    certificateNo: "CAL-2026-004",
-    status: "수리중",
-  },
-];
+// Helper function to convert master data instruments to local Equipment format
+function convertMasterInstrumentsToEquipments(masterInstruments: MasterInstrument[]): Equipment[] {
+  const statusMap: Record<MasterInstrument["status"], Equipment["status"]> = {
+    "사용중": "사용중",
+    "검교정중": "교정중",
+    "보관": "사용중", // Treat as available
+    "폐기": "폐기",
+  };
+
+  return masterInstruments.map((inst) => ({
+    id: inst.id,
+    managementNo: inst.code,
+    equipmentName: inst.name,
+    model: inst.model,
+    manufacturer: inst.manufacturer,
+    purchaseDate: "", // Not available in master data
+    measurementRange: inst.spec,
+    accuracy: "", // Not available in master data (could parse from spec)
+    department: inst.location,
+    storageLocation: inst.location,
+    calibrationCycle: inst.calibrationCycle,
+    lastCalibrationDate: inst.lastCalibrationDate,
+    nextCalibrationDate: inst.nextCalibrationDate,
+    calibrationAgency: "사외", // Default value
+    certificateNo: "", // Not available in master data
+    status: statusMap[inst.status] || "사용중",
+  }));
+}
+
+// Get initial equipments from master data
+const masterInstrumentData = getInstruments();
+const initialEquipments: Equipment[] = convertMasterInstrumentsToEquipments(masterInstrumentData);
 
 const initialHistories: CalibrationHistory[] = [
   {

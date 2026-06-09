@@ -11,8 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wrench, Plus, Save, Calendar, ClipboardList, FileCheck, BarChart3, Search, AlertTriangle } from "lucide-react";
+import { getEquipments, type Equipment as MasterEquipment } from "@/lib/master-data";
 
-// Types
+// Types - Extended from master data for maintenance-specific fields
 interface Equipment {
   id: string;
   name: string;
@@ -97,61 +98,66 @@ const CYCLE_LABELS: { [key: string]: string } = {
   yearly: "년",
 };
 
-// Sample equipment data
-const initialEquipments: Equipment[] = [
-  { id: "EQ-001", name: "CNC 선반 #1", managementNo: "M-2024-001", inspectionCycle: "월간", manager: "김철수", line: "A라인" },
-  { id: "EQ-002", name: "밀링머신 #2", managementNo: "M-2024-002", inspectionCycle: "주간", manager: "이영희", line: "A라인" },
-  { id: "EQ-003", name: "프레스 #1", managementNo: "M-2024-003", inspectionCycle: "월간", manager: "박민수", line: "B라인" },
-  { id: "EQ-004", name: "용접기 #1", managementNo: "M-2024-004", inspectionCycle: "분기", manager: "최지은", line: "B라인" },
-];
+// Transform master equipment data for maintenance-specific use
+const transformMasterEquipment = (masterEquipments: MasterEquipment[]): Equipment[] => {
+  return masterEquipments.map((eq) => ({
+    id: eq.code,
+    name: eq.name,
+    managementNo: `M-${eq.installDate.substring(0, 4)}-${eq.id.toString().padStart(3, "0")}`,
+    inspectionCycle: "월간", // Default cycle, can be customized per equipment
+    manager: "담당자", // Can be extended with actual manager data
+    line: eq.line,
+  }));
+};
 
-// Sample annual plans
-const initialAnnualPlans: AnnualPlan[] = [
-  {
-    equipmentId: "EQ-001",
-    equipmentName: "CNC 선반 #1",
-    line: "A라인",
-    monthlyPlan: { 1: true, 3: true, 5: true, 7: true, 9: true, 11: true },
-    monthlyResult: { 1: true, 3: true, 5: true },
-  },
-  {
-    equipmentId: "EQ-002",
-    equipmentName: "밀링머신 #2",
-    line: "A라인",
-    monthlyPlan: { 2: true, 4: true, 6: true, 8: true, 10: true, 12: true },
-    monthlyResult: { 2: true, 4: true },
-  },
-  {
-    equipmentId: "EQ-003",
-    equipmentName: "프레스 #1",
-    line: "B라인",
-    monthlyPlan: { 1: true, 4: true, 7: true, 10: true },
-    monthlyResult: { 1: true, 4: true },
-  },
-  {
-    equipmentId: "EQ-004",
-    equipmentName: "용접기 #1",
-    line: "B라인",
-    monthlyPlan: { 3: true, 6: true, 9: true, 12: true },
-    monthlyResult: { 3: true, 6: true },
-  },
-];
+// Get equipment data from master data
+const initialEquipments: Equipment[] = transformMasterEquipment(getEquipments());
 
-// Sample inspection items
-const initialInspectionItems: InspectionItem[] = [
-  { id: 1, equipmentId: "EQ-001", part: "주축", item: "베어링 상태", standard: "이상음 없음", method: "청음검사", cycle: "daily" },
-  { id: 2, equipmentId: "EQ-001", part: "윤활", item: "오일량", standard: "상한선 이상", method: "육안검사", cycle: "daily" },
-  { id: 3, equipmentId: "EQ-001", part: "전기계통", item: "절연저항", standard: "1MΩ 이상", method: "메가측정", cycle: "monthly" },
-  { id: 4, equipmentId: "EQ-002", part: "스핀들", item: "진동", standard: "0.5mm/s 이하", method: "진동측정기", cycle: "weekly" },
-  { id: 5, equipmentId: "EQ-003", part: "유압", item: "압력", standard: "150~180 bar", method: "게이지확인", cycle: "daily" },
-];
+// Generate annual plans from master equipment data
+const generateInitialAnnualPlans = (equipments: Equipment[]): AnnualPlan[] => {
+  return equipments.map((eq, index) => {
+    // Stagger maintenance plans across months based on equipment index
+    const planMonths: { [month: number]: boolean } = {};
+    const resultMonths: { [month: number]: boolean } = {};
 
-// Sample inspection results
-const initialInspectionResults: InspectionResult[] = [
-  { id: 1, equipmentId: "EQ-001", inspectionItemId: 1, inspectionDate: "2026-06-09", inspector: "김철수", result: "good", action: "", remarks: "" },
-  { id: 2, equipmentId: "EQ-001", inspectionItemId: 2, inspectionDate: "2026-06-09", inspector: "김철수", result: "good", action: "", remarks: "" },
-  { id: 3, equipmentId: "EQ-001", inspectionItemId: 3, inspectionDate: "2026-06-01", inspector: "김철수", result: "bad", action: "절연 처리 완료", remarks: "습기 유입으로 저하" },
-];
+    // Create bi-monthly plans starting from different months
+    const startMonth = (index % 6) + 1;
+    for (let month = startMonth; month <= 12; month += 2) {
+      planMonths[month] = true;
+      // Mark completed for months before June (current month)
+      if (month <= 5) {
+        resultMonths[month] = true;
+      }
+    }
+
+    return {
+      equipmentId: eq.id,
+      equipmentName: eq.name,
+      line: eq.line,
+      monthlyPlan: planMonths,
+      monthlyResult: resultMonths,
+    };
+  });
+};
+
+const initialAnnualPlans: AnnualPlan[] = generateInitialAnnualPlans(initialEquipments);
+
+// Sample inspection items using master equipment codes
+const masterEquipmentList = getEquipments();
+const initialInspectionItems: InspectionItem[] = masterEquipmentList.length > 0 ? [
+  { id: 1, equipmentId: masterEquipmentList[0]?.code || "EQ-001", part: "주축", item: "베어링 상태", standard: "이상음 없음", method: "청음검사", cycle: "daily" },
+  { id: 2, equipmentId: masterEquipmentList[0]?.code || "EQ-001", part: "윤활", item: "오일량", standard: "상한선 이상", method: "육안검사", cycle: "daily" },
+  { id: 3, equipmentId: masterEquipmentList[0]?.code || "EQ-001", part: "전기계통", item: "절연저항", standard: "1MΩ 이상", method: "메가측정", cycle: "monthly" },
+  { id: 4, equipmentId: masterEquipmentList[1]?.code || "EQ-002", part: "스핀들", item: "진동", standard: "0.5mm/s 이하", method: "진동측정기", cycle: "weekly" },
+  { id: 5, equipmentId: masterEquipmentList[2]?.code || "EQ-003", part: "유압", item: "압력", standard: "150~180 bar", method: "게이지확인", cycle: "daily" },
+] : [];
+
+// Sample inspection results using master equipment codes
+const initialInspectionResults: InspectionResult[] = masterEquipmentList.length > 0 ? [
+  { id: 1, equipmentId: masterEquipmentList[0]?.code || "EQ-001", inspectionItemId: 1, inspectionDate: "2026-06-09", inspector: "김철수", result: "good", action: "", remarks: "" },
+  { id: 2, equipmentId: masterEquipmentList[0]?.code || "EQ-001", inspectionItemId: 2, inspectionDate: "2026-06-09", inspector: "김철수", result: "good", action: "", remarks: "" },
+  { id: 3, equipmentId: masterEquipmentList[0]?.code || "EQ-001", inspectionItemId: 3, inspectionDate: "2026-06-01", inspector: "김철수", result: "bad", action: "절연 처리 완료", remarks: "습기 유입으로 저하" },
+] : [];
 
 // Patrol Inspection Items (standard checklist)
 const PATROL_INSPECTION_ITEMS: PatrolInspectionItem[] = [
@@ -165,16 +171,18 @@ const PATROL_INSPECTION_ITEMS: PatrolInspectionItem[] = [
   { id: "PI-008", category: "안전", item: "안전장치 작동" },
 ];
 
-// Patrol Areas (Lines)
-const PATROL_AREAS = ["A라인", "B라인", "C라인", "조립라인", "검사라인"];
+// Patrol Areas (Lines) - derive unique lines from master equipment data
+const PATROL_AREAS = [...new Set(masterEquipmentList.map(eq => eq.line))];
 
-// Sample patrol inspections
+// Sample patrol inspections using master data lines
+const firstLine = PATROL_AREAS[0] || "사출라인-A";
+const secondLine = PATROL_AREAS[1] || "사출라인-B";
 const initialPatrolInspections: PatrolInspection[] = [
   {
     id: 1,
     inspectionDate: "2026-06-10",
     inspectionTime: "09:00",
-    patrolArea: "A라인",
+    patrolArea: firstLine,
     inspector: "김철수",
     items: [
       { itemId: "PI-001", result: "normal" },
@@ -192,25 +200,25 @@ const initialPatrolInspections: PatrolInspection[] = [
     id: 2,
     inspectionDate: "2026-06-10",
     inspectionTime: "09:30",
-    patrolArea: "B라인",
+    patrolArea: secondLine,
     inspector: "이영희",
     items: [
-      { itemId: "PI-001", result: "abnormal", action: "프레스 #1 이상소음 발생, 설비이상보고서 작성" },
+      { itemId: "PI-001", result: "abnormal", action: "사출기 이상소음 발생, 설비이상보고서 작성" },
       { itemId: "PI-002", result: "normal" },
-      { itemId: "PI-003", result: "abnormal", action: "용접기 #1 미세 누유 확인, 모니터링 중" },
+      { itemId: "PI-003", result: "abnormal", action: "도장 로봇 미세 누유 확인, 모니터링 중" },
       { itemId: "PI-004", result: "normal" },
       { itemId: "PI-005", result: "normal" },
       { itemId: "PI-006", result: "normal" },
       { itemId: "PI-007", result: "normal" },
       { itemId: "PI-008", result: "normal" },
     ],
-    remarks: "B라인 프레스 이상 발견",
+    remarks: secondLine + " 설비 이상 발견",
   },
   {
     id: 3,
     inspectionDate: "2026-06-09",
     inspectionTime: "09:00",
-    patrolArea: "A라인",
+    patrolArea: firstLine,
     inspector: "김철수",
     items: [
       { itemId: "PI-001", result: "normal" },
@@ -226,14 +234,16 @@ const initialPatrolInspections: PatrolInspection[] = [
   },
 ];
 
-// Sample anomaly reports
+// Sample anomaly reports using master equipment data
+const thirdEquipment = masterEquipmentList[2];
+const firstEquipment = masterEquipmentList[0];
 const initialAnomalyReports: AnomalyReport[] = [
   {
     id: 1,
     reportDate: "2026-06-10",
     reportTime: "09:35",
-    equipmentId: "EQ-003",
-    equipmentName: "프레스 #1",
+    equipmentId: thirdEquipment?.code || "EQ-003",
+    equipmentName: thirdEquipment?.name || "사출기 3호기",
     anomalyDescription: "가동 중 이상소음 발생. 금속 마찰음으로 추정되는 소리가 간헐적으로 발생함.",
     emergencyAction: "설비 가동 중단 후 안전구역 확보. 윤활유 주입 시도.",
     rootCause: "베어링 마모로 인한 소음 발생 (분석 중)",
@@ -245,8 +255,8 @@ const initialAnomalyReports: AnomalyReport[] = [
     id: 2,
     reportDate: "2026-06-05",
     reportTime: "14:20",
-    equipmentId: "EQ-001",
-    equipmentName: "CNC 선반 #1",
+    equipmentId: firstEquipment?.code || "EQ-001",
+    equipmentName: firstEquipment?.name || "사출기 1호기",
     anomalyDescription: "절연저항 저하로 인한 누전차단기 작동",
     emergencyAction: "전원 차단 후 습기 제거 작업 실시",
     rootCause: "우기로 인한 습기 유입",

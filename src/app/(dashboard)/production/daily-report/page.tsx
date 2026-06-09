@@ -27,6 +27,7 @@ import {
   TrendingDown,
   Search,
 } from "lucide-react";
+import { getParts, getEquipments } from "@/lib/master-data";
 
 // 생산일보 항목 타입
 interface DailyReportItem {
@@ -96,6 +97,13 @@ interface DailyReportHistory {
 export default function DailyReportPage() {
   const [activeTab, setActiveTab] = useState("report-entry");
 
+  // 기준정보에서 품목 및 설비 데이터 가져오기
+  const parts = getParts();
+  const equipments = getEquipments();
+
+  // 설비 데이터에서 라인 목록 추출 (중복 제거)
+  const lineOptions = [...new Set(equipments.map(eq => eq.line))];
+
   // 생산일보 입력 상태
   const [reportItems, setReportItems] = useState<DailyReportItem[]>([
     {
@@ -137,8 +145,6 @@ export default function DailyReportPage() {
   const [historySearchDate, setHistorySearchDate] = useState("");
   const [historySearchLine, setHistorySearchLine] = useState("");
 
-  // 라인 목록
-  const lineOptions = ["Line-A", "Line-B", "Line-C", "Line-D", "Line-E"];
 
   // 불량유형 라벨
   const defectTypeLabels = {
@@ -615,29 +621,29 @@ export default function DailyReportPage() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="space-y-2">
-                          <Label>품번</Label>
-                          <Input
+                        <div className="space-y-2 md:col-span-2">
+                          <Label>품목</Label>
+                          <Select
                             value={item.itemNo}
-                            onChange={(e) =>
-                              updateReportItem(item.id, "itemNo", e.target.value)
-                            }
-                            placeholder="품번 입력"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>품명</Label>
-                          <Input
-                            value={item.itemName}
-                            onChange={(e) =>
-                              updateReportItem(
-                                item.id,
-                                "itemName",
-                                e.target.value
-                              )
-                            }
-                            placeholder="품명 입력"
-                          />
+                            onValueChange={(v) => {
+                              const selectedPart = parts.find(p => p.code === v);
+                              if (selectedPart) {
+                                updateReportItem(item.id, "itemNo", selectedPart.code);
+                                updateReportItem(item.id, "itemName", selectedPart.name);
+                              }
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="품목 선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {parts.map((part) => (
+                                <SelectItem key={part.code} value={part.code}>
+                                  {part.code} - {part.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
                           <Label>작업자</Label>

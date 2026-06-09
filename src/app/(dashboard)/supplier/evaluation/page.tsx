@@ -36,15 +36,7 @@ import {
   AlertCircle,
   CheckCircle,
 } from "lucide-react";
-
-// Types
-interface Supplier {
-  id: string;
-  name: string;
-  businessNumber: string;
-  industry: string;
-  mainProducts: string;
-}
+import { getActiveSuppliers, getSupplierByCode, type Supplier } from "@/lib/master-data";
 
 interface AnnualPlan {
   id: string;
@@ -75,85 +67,69 @@ interface EvaluationRecord {
   remarks: string;
 }
 
-// Sample suppliers
-const sampleSuppliers: Supplier[] = [
-  { id: "S001", name: "ABC 전자부품", businessNumber: "123-45-67890", industry: "전자부품", mainProducts: "PCB, 커넥터" },
-  { id: "S002", name: "XYZ 금속", businessNumber: "234-56-78901", industry: "금속가공", mainProducts: "알루미늄 가공품" },
-  { id: "S003", name: "DEF 플라스틱", businessNumber: "345-67-89012", industry: "플라스틱", mainProducts: "사출품, 케이스" },
-  { id: "S004", name: "GHI 화학", businessNumber: "456-78-90123", industry: "화학", mainProducts: "접착제, 코팅제" },
-  { id: "S005", name: "JKL 포장", businessNumber: "567-89-01234", industry: "포장재", mainProducts: "포장박스, 완충재" },
-  { id: "S006", name: "MNO 기계", businessNumber: "678-90-12345", industry: "기계", mainProducts: "금형, 지그" },
-];
 
 // Sample annual plans for 2026
 const samplePlans: AnnualPlan[] = [
-  { id: "P001", year: 2026, supplierId: "S001", supplierName: "ABC 전자부품", evaluationType: "정기", plannedMonth: 3, status: "완료" },
-  { id: "P002", year: 2026, supplierId: "S002", supplierName: "XYZ 금속", evaluationType: "정기", plannedMonth: 3, status: "완료" },
-  { id: "P003", year: 2026, supplierId: "S003", supplierName: "DEF 플라스틱", evaluationType: "정기", plannedMonth: 4, status: "완료" },
-  { id: "P004", year: 2026, supplierId: "S004", supplierName: "GHI 화학", evaluationType: "정기", plannedMonth: 4, status: "완료" },
-  { id: "P005", year: 2026, supplierId: "S005", supplierName: "JKL 포장", evaluationType: "정기", plannedMonth: 5, status: "미평가" },
-  { id: "P006", year: 2026, supplierId: "S001", supplierName: "ABC 전자부품", evaluationType: "정기", plannedMonth: 6, status: "계획" },
-  { id: "P007", year: 2026, supplierId: "S002", supplierName: "XYZ 금속", evaluationType: "정기", plannedMonth: 6, status: "계획" },
-  { id: "P008", year: 2026, supplierId: "S003", supplierName: "DEF 플라스틱", evaluationType: "정기", plannedMonth: 7, status: "계획" },
-  { id: "P009", year: 2026, supplierId: "S004", supplierName: "GHI 화학", evaluationType: "정기", plannedMonth: 7, status: "계획" },
-  { id: "P010", year: 2026, supplierId: "S005", supplierName: "JKL 포장", evaluationType: "정기", plannedMonth: 8, status: "계획" },
-  { id: "P011", year: 2026, supplierId: "S006", supplierName: "MNO 기계", evaluationType: "신규", plannedMonth: 2, status: "완료" },
-  { id: "P012", year: 2026, supplierId: "S006", supplierName: "MNO 기계", evaluationType: "정기", plannedMonth: 9, status: "계획" },
+  { id: "P001", year: 2026, supplierId: "SUP-001", supplierName: "(주)카라", evaluationType: "정기", plannedMonth: 3, status: "완료" },
+  { id: "P002", year: 2026, supplierId: "SUP-002", supplierName: "G금강", evaluationType: "정기", plannedMonth: 3, status: "완료" },
+  { id: "P003", year: 2026, supplierId: "SUP-003", supplierName: "신성화학", evaluationType: "정기", plannedMonth: 4, status: "완료" },
+  { id: "P004", year: 2026, supplierId: "SUP-004", supplierName: "성신스프레이", evaluationType: "정기", plannedMonth: 4, status: "완료" },
+  { id: "P005", year: 2026, supplierId: "SUP-005", supplierName: "모아에스엔피", evaluationType: "정기", plannedMonth: 5, status: "미평가" },
+  { id: "P006", year: 2026, supplierId: "SUP-001", supplierName: "(주)카라", evaluationType: "정기", plannedMonth: 6, status: "계획" },
+  { id: "P007", year: 2026, supplierId: "SUP-002", supplierName: "G금강", evaluationType: "정기", plannedMonth: 6, status: "계획" },
+  { id: "P008", year: 2026, supplierId: "SUP-003", supplierName: "신성화학", evaluationType: "정기", plannedMonth: 7, status: "계획" },
+  { id: "P009", year: 2026, supplierId: "SUP-004", supplierName: "성신스프레이", evaluationType: "정기", plannedMonth: 7, status: "계획" },
+  { id: "P010", year: 2026, supplierId: "SUP-005", supplierName: "모아에스엔피", evaluationType: "정기", plannedMonth: 8, status: "계획" },
 ];
 
 // Sample evaluation records
 const sampleEvaluations: EvaluationRecord[] = [
   {
-    id: "E001", evaluationNumber: "EVL-2026-001", evaluationDate: "2026-02-15", supplierId: "S006", supplierName: "MNO 기계",
-    evaluationType: "신규", qualityScore: 32, deliveryScore: 25, priceScore: 12, techScore: 12, totalScore: 81, grade: "B",
-    action: "관리", evaluator: "김평가", remarks: "신규 업체 최초 평가, 양호"
-  },
-  {
-    id: "E002", evaluationNumber: "EVL-2026-002", evaluationDate: "2026-03-15", supplierId: "S001", supplierName: "ABC 전자부품",
+    id: "E002", evaluationNumber: "EVL-2026-001", evaluationDate: "2026-03-15", supplierId: "SUP-001", supplierName: "(주)카라",
     evaluationType: "정기", qualityScore: 38, deliveryScore: 28, priceScore: 14, techScore: 12, totalScore: 92, grade: "A",
     action: "유지", evaluator: "김평가", remarks: "품질 우수"
   },
   {
-    id: "E003", evaluationNumber: "EVL-2026-003", evaluationDate: "2026-03-20", supplierId: "S002", supplierName: "XYZ 금속",
+    id: "E003", evaluationNumber: "EVL-2026-002", evaluationDate: "2026-03-20", supplierId: "SUP-002", supplierName: "G금강",
     evaluationType: "정기", qualityScore: 30, deliveryScore: 24, priceScore: 12, techScore: 12, totalScore: 78, grade: "B",
     action: "관리", evaluator: "이평가", remarks: "납기 개선 필요"
   },
   {
-    id: "E004", evaluationNumber: "EVL-2026-004", evaluationDate: "2026-04-10", supplierId: "S003", supplierName: "DEF 플라스틱",
+    id: "E004", evaluationNumber: "EVL-2026-003", evaluationDate: "2026-04-10", supplierId: "SUP-003", supplierName: "신성화학",
     evaluationType: "정기", qualityScore: 26, deliveryScore: 22, priceScore: 10, techScore: 7, totalScore: 65, grade: "C",
     action: "개선요구", evaluator: "박평가", remarks: "품질 불량률 증가, 개선 필요"
   },
   {
-    id: "E005", evaluationNumber: "EVL-2026-005", evaluationDate: "2026-04-18", supplierId: "S004", supplierName: "GHI 화학",
+    id: "E005", evaluationNumber: "EVL-2026-004", evaluationDate: "2026-04-18", supplierId: "SUP-004", supplierName: "성신스프레이",
     evaluationType: "정기", qualityScore: 20, deliveryScore: 18, priceScore: 8, techScore: 6, totalScore: 52, grade: "D",
     action: "거래중지검토", evaluator: "김평가", remarks: "품질 및 납기 문제 심각"
   },
-  // Historical data for S001
+  // Historical data for SUP-001
   {
-    id: "E006", evaluationNumber: "EVL-2025-010", evaluationDate: "2025-09-15", supplierId: "S001", supplierName: "ABC 전자부품",
+    id: "E006", evaluationNumber: "EVL-2025-010", evaluationDate: "2025-09-15", supplierId: "SUP-001", supplierName: "(주)카라",
     evaluationType: "정기", qualityScore: 36, deliveryScore: 26, priceScore: 13, techScore: 11, totalScore: 86, grade: "B",
     action: "관리", evaluator: "김평가", remarks: ""
   },
   {
-    id: "E007", evaluationNumber: "EVL-2025-004", evaluationDate: "2025-03-15", supplierId: "S001", supplierName: "ABC 전자부품",
+    id: "E007", evaluationNumber: "EVL-2025-004", evaluationDate: "2025-03-15", supplierId: "SUP-001", supplierName: "(주)카라",
     evaluationType: "정기", qualityScore: 34, deliveryScore: 25, priceScore: 12, techScore: 10, totalScore: 81, grade: "B",
     action: "관리", evaluator: "김평가", remarks: ""
   },
-  // Historical data for S002
+  // Historical data for SUP-002
   {
-    id: "E008", evaluationNumber: "EVL-2025-011", evaluationDate: "2025-09-20", supplierId: "S002", supplierName: "XYZ 금속",
+    id: "E008", evaluationNumber: "EVL-2025-011", evaluationDate: "2025-09-20", supplierId: "SUP-002", supplierName: "G금강",
     evaluationType: "정기", qualityScore: 32, deliveryScore: 22, priceScore: 11, techScore: 10, totalScore: 75, grade: "B",
     action: "관리", evaluator: "이평가", remarks: ""
   },
-  // Historical data for S003
+  // Historical data for SUP-003
   {
-    id: "E009", evaluationNumber: "EVL-2025-012", evaluationDate: "2025-10-10", supplierId: "S003", supplierName: "DEF 플라스틱",
+    id: "E009", evaluationNumber: "EVL-2025-012", evaluationDate: "2025-10-10", supplierId: "SUP-003", supplierName: "신성화학",
     evaluationType: "정기", qualityScore: 30, deliveryScore: 24, priceScore: 11, techScore: 9, totalScore: 74, grade: "B",
     action: "관리", evaluator: "박평가", remarks: ""
   },
-  // Historical data for S004
+  // Historical data for SUP-004
   {
-    id: "E010", evaluationNumber: "EVL-2025-013", evaluationDate: "2025-10-18", supplierId: "S004", supplierName: "GHI 화학",
+    id: "E010", evaluationNumber: "EVL-2025-013", evaluationDate: "2025-10-18", supplierId: "SUP-004", supplierName: "성신스프레이",
     evaluationType: "정기", qualityScore: 28, deliveryScore: 22, priceScore: 10, techScore: 8, totalScore: 68, grade: "C",
     action: "개선요구", evaluator: "김평가", remarks: ""
   },
@@ -212,7 +188,9 @@ export default function SupplierEvaluationPage() {
   const [selectedYear, setSelectedYear] = useState(2026);
   const [plans, setPlans] = useState<AnnualPlan[]>(samplePlans);
   const [evaluations, setEvaluations] = useState<EvaluationRecord[]>(sampleEvaluations);
-  const [suppliers] = useState<Supplier[]>(sampleSuppliers);
+
+  // Use shared supplier data from master-data
+  const suppliers = getActiveSuppliers();
 
   // New plan form state
   const [newPlan, setNewPlan] = useState({
@@ -301,13 +279,13 @@ export default function SupplierEvaluationPage() {
       return;
     }
 
-    const supplier = suppliers.find((s) => s.id === newPlan.supplierId);
+    const supplier = getSupplierByCode(newPlan.supplierId);
     if (!supplier) return;
 
     const plan: AnnualPlan = {
       id: `P${String(Date.now()).slice(-6)}`,
       year: selectedYear,
-      supplierId: newPlan.supplierId,
+      supplierId: supplier.code,
       supplierName: supplier.name,
       evaluationType: newPlan.evaluationType as "정기" | "수시" | "신규",
       plannedMonth: newPlan.plannedMonth,
@@ -326,7 +304,7 @@ export default function SupplierEvaluationPage() {
 
     const totalScore = evalForm.qualityScore + evalForm.deliveryScore + evalForm.priceScore + evalForm.techScore;
     const { grade, action } = calculateGrade(totalScore);
-    const supplier = suppliers.find((s) => s.id === evalForm.supplierId);
+    const supplier = getSupplierByCode(evalForm.supplierId);
 
     const newEval: EvaluationRecord = {
       id: `E${String(Date.now()).slice(-6)}`,
@@ -462,7 +440,7 @@ export default function SupplierEvaluationPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {suppliers.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
+                          <SelectItem key={s.code} value={s.code}>
                             {s.name}
                           </SelectItem>
                         ))}
@@ -531,9 +509,9 @@ export default function SupplierEvaluationPage() {
                     </TableHeader>
                     <TableBody>
                       {suppliers.map((supplier) => {
-                        const supplierPlans = yearPlans.filter((p) => p.supplierId === supplier.id);
+                        const supplierPlans = yearPlans.filter((p) => p.supplierId === supplier.code);
                         return (
-                          <TableRow key={supplier.id}>
+                          <TableRow key={supplier.code}>
                             <TableCell className="font-medium">{supplier.name}</TableCell>
                             {months.map((m) => {
                               const monthPlan = supplierPlans.find((p) => p.plannedMonth === m.value);
@@ -655,7 +633,7 @@ export default function SupplierEvaluationPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {suppliers.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
+                          <SelectItem key={s.code} value={s.code}>
                             {s.name}
                           </SelectItem>
                         ))}
@@ -1046,7 +1024,7 @@ export default function SupplierEvaluationPage() {
                     <SelectContent>
                       <SelectItem value="">전체 업체</SelectItem>
                       {suppliers.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
+                        <SelectItem key={s.code} value={s.code}>
                           {s.name}
                         </SelectItem>
                       ))}
@@ -1058,7 +1036,7 @@ export default function SupplierEvaluationPage() {
 
             {/* Supplier History Cards */}
             {Object.entries(filteredSupplierHistory).map(([supplierId, records]) => {
-              const supplier = suppliers.find((s) => s.id === supplierId);
+              const supplier = getSupplierByCode(supplierId);
               const latestRecord = records[0];
               const trend = getGradeTrend(records);
 
