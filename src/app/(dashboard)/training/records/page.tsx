@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GraduationCap, Save, Plus, Trash2, FileText, Users, ClipboardCheck, History } from "lucide-react";
+import { getActiveTrainingCourses, type TrainingCourse } from "@/lib/master-data";
+import { getUsers, getActiveUsers, getUsersByDepartment, type User } from "@/lib/master-data";
 
 // Types
 interface Attendee {
   id: string;
+  userCode: string;
   name: string;
   department: string;
   position: string;
@@ -34,11 +37,10 @@ interface TrainingHistory {
 interface TrainingRecordForm {
   // Header
   trainingNumber: string;
-  trainingName: string;
+  trainingCourseCode: string; // Course code from master data
   trainingDateTime: string;
   trainingLocation: string;
   // Training Info
-  trainingType: "new-employee" | "regular" | "special" | "qualification";
   trainingContent: string;
   instructorType: "internal" | "external";
   instructorName: string;
@@ -52,10 +54,9 @@ interface TrainingRecordForm {
 // Initial data
 const initialFormData: TrainingRecordForm = {
   trainingNumber: "TRN-2026-001",
-  trainingName: "",
+  trainingCourseCode: "",
   trainingDateTime: "",
   trainingLocation: "",
-  trainingType: "regular",
   trainingContent: "",
   instructorType: "internal",
   instructorName: "",
@@ -66,9 +67,9 @@ const initialFormData: TrainingRecordForm = {
 };
 
 const initialAttendees: Attendee[] = [
-  { id: "1", name: "김철수", department: "품질관리팀", position: "대리", attendance: "present", score: 85, passed: true },
-  { id: "2", name: "이영희", department: "생산팀", position: "사원", attendance: "present", score: 92, passed: true },
-  { id: "3", name: "박지성", department: "품질관리팀", position: "주임", attendance: "late", score: 78, passed: true },
+  { id: "1", userCode: "EMP-003", name: "박품질", department: "품질관리팀", position: "팀장", attendance: "present", score: 85, passed: true },
+  { id: "2", userCode: "EMP-008", name: "한검사", department: "품질관리팀", position: "과장", attendance: "present", score: 92, passed: true },
+  { id: "3", userCode: "EMP-009", name: "오생산", department: "생산관리팀", position: "대리", attendance: "late", score: 78, passed: true },
 ];
 
 const initialHistory: TrainingHistory[] = [
@@ -91,10 +92,21 @@ const attendanceLabels: Record<string, string> = {
 };
 
 export default function TrainingRecordsPage() {
+  // Get training courses from master data
+  const trainingCourses = useMemo(() => getActiveTrainingCourses(), []);
+
   const [activeTab, setActiveTab] = useState("info");
   const [formData, setFormData] = useState<TrainingRecordForm>(initialFormData);
   const [attendees, setAttendees] = useState<Attendee[]>(initialAttendees);
   const [history] = useState<TrainingHistory[]>(initialHistory);
+
+  // Master data
+  const activeUsers = getActiveUsers();
+
+  // Get selected course details
+  const selectedCourse = useMemo(() => {
+    return trainingCourses.find((c) => c.code === formData.trainingCourseCode);
+  }, [formData.trainingCourseCode, trainingCourses]);
 
   const handleInputChange = (field: keyof TrainingRecordForm, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -109,6 +121,7 @@ export default function TrainingRecordsPage() {
   const addAttendee = () => {
     const newAttendee: Attendee = {
       id: Date.now().toString(),
+      userCode: "",
       name: "",
       department: "",
       position: "",
@@ -117,6 +130,25 @@ export default function TrainingRecordsPage() {
       passed: null,
     };
     setAttendees((prev) => [...prev, newAttendee]);
+  };
+
+  const handleUserSelect = (attendeeId: string, userCode: string) => {
+    const selectedUser = activeUsers.find((u) => u.code === userCode);
+    if (selectedUser) {
+      setAttendees((prev) =>
+        prev.map((a) =>
+          a.id === attendeeId
+            ? {
+                ...a,
+                userCode: selectedUser.code,
+                name: selectedUser.name,
+                department: selectedUser.departmentName,
+                position: selectedUser.position,
+              }
+            : a
+        )
+      );
+    }
   };
 
   const removeAttendee = (id: string) => {
@@ -162,14 +194,23 @@ export default function TrainingRecordsPage() {
                 className="bg-muted"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="trainingName">교육명</Label>
-              <Input
-                id="trainingName"
-                value={formData.trainingName}
-                onChange={(e) => handleInputChange("trainingName", e.target.value)}
-                placeholder="교육명을 입력하세요"
-              />
+            <div className="space-y-2 col-span-2">
+              <Label>교육과정</Label>
+              <Select
+                value={formData.trainingCourseCode}
+                onValueChange={(value) => handleInputChange("trainingCourseCode", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="교육과정 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  {trainingCourses.map((course) => (
+                    <SelectItem key={course.code} value={course.code}>
+                      {course.name} ({course.type} / {course.category})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="trainingDateTime">교육일시</Label>
@@ -190,6 +231,18 @@ export default function TrainingRecordsPage() {
               />
             </div>
           </div>
+          {selectedCourse && (
+            <div className="mt-4 p-3 bg-muted rounded-md text-sm">
+              <div className="grid grid-cols-5 gap-2">
+                <div><span className="text-muted-foreground">유형:</span> {selectedCourse.type}</div>
+                <div><span className="text-muted-foreground">분류:</span> {selectedCourse.category}</div>
+                <div><span className="text-muted-foreground">기본시간:</span> {selectedCourse.duration}시간</div>
+                <div><span className="text-muted-foreground">주기:</span> {selectedCourse.frequency}</div>
+                <div><span className="text-muted-foreground">필수:</span> {selectedCourse.isRequired ? "예" : "아니오"}</div>
+              </div>
+              <div className="mt-2 text-muted-foreground">{selectedCourse.description}</div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -222,23 +275,6 @@ export default function TrainingRecordsPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>교육유형</Label>
-                  <Select
-                    value={formData.trainingType}
-                    onValueChange={(value) => handleInputChange("trainingType", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="교육유형 선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="new-employee">신입교육</SelectItem>
-                      <SelectItem value="regular">정기교육</SelectItem>
-                      <SelectItem value="special">특별교육</SelectItem>
-                      <SelectItem value="qualification">자격교육</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-2">
                   <Label>강사 유형</Label>
                   <Select
@@ -334,23 +370,35 @@ export default function TrainingRecordsPage() {
                     attendees.map((attendee) => (
                       <TableRow key={attendee.id}>
                         <TableCell>
-                          <Input
-                            value={attendee.name}
-                            onChange={(e) => handleAttendeeChange(attendee.id, "name", e.target.value)}
-                            placeholder="이름"
-                          />
+                          <Select
+                            value={attendee.userCode}
+                            onValueChange={(value) => handleUserSelect(attendee.id, value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="사원 선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {activeUsers.map((user) => (
+                                <SelectItem key={user.code} value={user.code}>
+                                  {user.name} ({user.departmentName})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>
                           <Input
                             value={attendee.department}
-                            onChange={(e) => handleAttendeeChange(attendee.id, "department", e.target.value)}
+                            readOnly
+                            className="bg-muted"
                             placeholder="부서"
                           />
                         </TableCell>
                         <TableCell>
                           <Input
                             value={attendee.position}
-                            onChange={(e) => handleAttendeeChange(attendee.id, "position", e.target.value)}
+                            readOnly
+                            className="bg-muted"
                             placeholder="직급"
                           />
                         </TableCell>

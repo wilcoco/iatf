@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, AlertCircle, MessageSquareWarning } from "lucide-react";
+import { getActiveDefectTypes } from "@/lib/master-data";
 
 interface CustomerComplaint {
   id: number;
@@ -64,7 +65,7 @@ const initialData: CustomerComplaint[] = [
   },
 ];
 
-const complaintTypeOptions = ["품질불량", "납기지연", "수량부족", "서류오류", "포장불량", "기타"];
+const complaintTypeOptions = getActiveDefectTypes();
 const statusOptions = ["접수", "분석중", "조치중", "완료"];
 
 export default function CustomerComplaintsPage() {
@@ -73,7 +74,7 @@ export default function CustomerComplaintsPage() {
   const [formData, setFormData] = useState({
     receiptDate: "",
     customer: "",
-    complaintType: "품질불량",
+    complaintType: "",
     description: "",
     rootCause: "",
     correctiveAction: "",
@@ -93,7 +94,7 @@ export default function CustomerComplaintsPage() {
     setFormData({
       receiptDate: "",
       customer: "",
-      complaintType: "품질불량",
+      complaintType: "",
       description: "",
       rootCause: "",
       correctiveAction: "",
@@ -176,9 +177,9 @@ export default function CustomerComplaintsPage() {
                       <SelectValue placeholder="유형 선택" />
                     </SelectTrigger>
                     <SelectContent>
-                      {complaintTypeOptions.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
+                      {complaintTypeOptions.map((defect) => (
+                        <SelectItem key={defect.code} value={defect.code}>
+                          {defect.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

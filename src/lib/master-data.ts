@@ -238,3 +238,277 @@ export const customers: Customer[] = [
 
 export function getCustomers() { return customers; }
 export function getCustomerByCode(code: string) { return customers.find(c => c.code === code); }
+
+// ============ 차종 데이터 ============
+export interface VehicleModel {
+  id: number;
+  code: string;
+  name: string;
+  customerCode: string;
+  customerName: string;
+  productionYear: string;
+  status: "양산" | "개발" | "단종";
+}
+
+export const vehicleModels: VehicleModel[] = [
+  { id: 1, code: "VM-001", name: "아반떼", customerCode: "CUS-001", customerName: "현대자동차", productionYear: "2020", status: "양산" },
+  { id: 2, code: "VM-002", name: "쏘나타", customerCode: "CUS-001", customerName: "현대자동차", productionYear: "2019", status: "양산" },
+  { id: 3, code: "VM-003", name: "그랜저", customerCode: "CUS-001", customerName: "현대자동차", productionYear: "2021", status: "양산" },
+  { id: 4, code: "VM-004", name: "K5", customerCode: "CUS-002", customerName: "기아자동차", productionYear: "2020", status: "양산" },
+  { id: 5, code: "VM-005", name: "쏘렌토", customerCode: "CUS-002", customerName: "기아자동차", productionYear: "2020", status: "양산" },
+  { id: 6, code: "VM-006", name: "카니발", customerCode: "CUS-002", customerName: "기아자동차", productionYear: "2021", status: "양산" },
+  { id: 7, code: "VM-007", name: "투싼", customerCode: "CUS-001", customerName: "현대자동차", productionYear: "2022", status: "양산" },
+  { id: 8, code: "VM-008", name: "싼타페", customerCode: "CUS-001", customerName: "현대자동차", productionYear: "2023", status: "양산" },
+];
+
+export function getVehicleModels() { return vehicleModels; }
+export function getVehicleModelByCode(code: string) { return vehicleModels.find(v => v.code === code); }
+export function getVehicleModelsByCustomer(customerCode: string) { return vehicleModels.filter(v => v.customerCode === customerCode); }
+export function getActiveVehicleModels() { return vehicleModels.filter(v => v.status === "양산"); }
+
+// ============ 사용자/작업자 데이터 ============
+export interface User {
+  id: number;
+  code: string;
+  name: string;
+  email: string;
+  departmentCode: string;
+  departmentName: string;
+  position: string;
+  role: "admin" | "manager" | "user";
+  isActive: boolean;
+}
+
+export const users: User[] = [
+  { id: 1, code: "EMP-001", name: "김관리", email: "kim@company.com", departmentCode: "DEPT-001", departmentName: "경영지원팀", position: "팀장", role: "admin", isActive: true },
+  { id: 2, code: "EMP-002", name: "이영업", email: "lee@company.com", departmentCode: "DEPT-002", departmentName: "영업팀", position: "팀장", role: "manager", isActive: true },
+  { id: 3, code: "EMP-003", name: "박품질", email: "park@company.com", departmentCode: "DEPT-003", departmentName: "품질관리팀", position: "팀장", role: "manager", isActive: true },
+  { id: 4, code: "EMP-004", name: "최생산", email: "choi@company.com", departmentCode: "DEPT-004", departmentName: "생산관리팀", position: "팀장", role: "manager", isActive: true },
+  { id: 5, code: "EMP-005", name: "정기술", email: "jung@company.com", departmentCode: "DEPT-005", departmentName: "생산기술팀", position: "팀장", role: "manager", isActive: true },
+  { id: 6, code: "EMP-006", name: "강구매", email: "kang@company.com", departmentCode: "DEPT-006", departmentName: "구매팀", position: "팀장", role: "manager", isActive: true },
+  { id: 7, code: "EMP-007", name: "윤설비", email: "yoon@company.com", departmentCode: "DEPT-007", departmentName: "설비팀", position: "팀장", role: "manager", isActive: true },
+  { id: 8, code: "EMP-008", name: "한검사", email: "han@company.com", departmentCode: "DEPT-003", departmentName: "품질관리팀", position: "과장", role: "user", isActive: true },
+  { id: 9, code: "EMP-009", name: "오생산", email: "oh@company.com", departmentCode: "DEPT-004", departmentName: "생산관리팀", position: "대리", role: "user", isActive: true },
+  { id: 10, code: "EMP-010", name: "서조립", email: "seo@company.com", departmentCode: "DEPT-004", departmentName: "생산관리팀", position: "사원", role: "user", isActive: true },
+];
+
+export function getUsers() { return users; }
+export function getUserByCode(code: string) { return users.find(u => u.code === code); }
+export function getActiveUsers() { return users.filter(u => u.isActive); }
+export function getUsersByDepartment(deptCode: string) { return users.filter(u => u.departmentCode === deptCode); }
+
+// ============ 불량유형 데이터 ============
+export interface DefectType {
+  id: number;
+  code: string;
+  name: string;
+  category: "외관" | "치수" | "기능" | "포장" | "기타";
+  description: string;
+  isActive: boolean;
+}
+
+export const defectTypes: DefectType[] = [
+  { id: 1, code: "DFT-001", name: "스크래치", category: "외관", description: "제품 표면 긁힘", isActive: true },
+  { id: 2, code: "DFT-002", name: "찍힘", category: "외관", description: "제품 표면 찍힘 자국", isActive: true },
+  { id: 3, code: "DFT-003", name: "이물", category: "외관", description: "도장면 이물 부착", isActive: true },
+  { id: 4, code: "DFT-004", name: "흘림", category: "외관", description: "도료 흘림 현상", isActive: true },
+  { id: 5, code: "DFT-005", name: "미도장", category: "외관", description: "도장 누락 부위", isActive: true },
+  { id: 6, code: "DFT-006", name: "변색", category: "외관", description: "색상 차이/변색", isActive: true },
+  { id: 7, code: "DFT-007", name: "광택불량", category: "외관", description: "광택 기준 미달", isActive: true },
+  { id: 8, code: "DFT-008", name: "치수불량", category: "치수", description: "규격 치수 초과/미달", isActive: true },
+  { id: 9, code: "DFT-009", name: "변형", category: "치수", description: "제품 휨/비틀림", isActive: true },
+  { id: 10, code: "DFT-010", name: "크랙", category: "기능", description: "균열/금 발생", isActive: true },
+  { id: 11, code: "DFT-011", name: "조립불량", category: "기능", description: "조립 불가/간섭", isActive: true },
+  { id: 12, code: "DFT-012", name: "기능불량", category: "기능", description: "동작/기능 이상", isActive: true },
+  { id: 13, code: "DFT-013", name: "포장파손", category: "포장", description: "포장 손상", isActive: true },
+  { id: 14, code: "DFT-014", name: "라벨오류", category: "포장", description: "라벨 부착 오류", isActive: true },
+  { id: 15, code: "DFT-015", name: "기타", category: "기타", description: "기타 불량", isActive: true },
+];
+
+export function getDefectTypes() { return defectTypes; }
+export function getDefectTypeByCode(code: string) { return defectTypes.find(d => d.code === code); }
+export function getDefectTypesByCategory(category: string) { return defectTypes.filter(d => d.category === category); }
+export function getActiveDefectTypes() { return defectTypes.filter(d => d.isActive); }
+
+// ============ 검사항목 데이터 ============
+export interface InspectionItem {
+  id: number;
+  code: string;
+  name: string;
+  type: "수입검사" | "공정검사" | "출하검사" | "초물검사";
+  category: "외관" | "치수" | "성능" | "신뢰성";
+  spec: string;
+  lsl: number | null; // Lower Spec Limit
+  usl: number | null; // Upper Spec Limit
+  unit: string;
+  method: string;
+  instrumentCode: string | null;
+  frequency: string;
+  isActive: boolean;
+}
+
+export const inspectionItems: InspectionItem[] = [
+  // 외관검사 항목
+  { id: 1, code: "INS-ITM-001", name: "외관검사", type: "공정검사", category: "외관", spec: "스크래치, 이물, 변색 없을 것", lsl: null, usl: null, unit: "-", method: "육안검사", instrumentCode: null, frequency: "전수", isActive: true },
+  { id: 2, code: "INS-ITM-002", name: "색상검사", type: "공정검사", category: "외관", spec: "ΔE ≤ 1.0", lsl: null, usl: 1.0, unit: "ΔE", method: "색차계 측정", instrumentCode: "INS-005", frequency: "LOT별", isActive: true },
+  { id: 3, code: "INS-ITM-003", name: "광택검사", type: "공정검사", category: "외관", spec: "85 ± 5 GU", lsl: 80, usl: 90, unit: "GU", method: "광택계 측정", instrumentCode: "INS-006", frequency: "LOT별", isActive: true },
+  // 치수검사 항목
+  { id: 4, code: "INS-ITM-004", name: "전장 치수", type: "공정검사", category: "치수", spec: "500 ± 0.5mm", lsl: 499.5, usl: 500.5, unit: "mm", method: "버니어캘리퍼스", instrumentCode: "INS-001", frequency: "초중종물", isActive: true },
+  { id: 5, code: "INS-ITM-005", name: "전폭 치수", type: "공정검사", category: "치수", spec: "300 ± 0.3mm", lsl: 299.7, usl: 300.3, unit: "mm", method: "버니어캘리퍼스", instrumentCode: "INS-001", frequency: "초중종물", isActive: true },
+  { id: 6, code: "INS-ITM-006", name: "두께 치수", type: "공정검사", category: "치수", spec: "3.0 ± 0.1mm", lsl: 2.9, usl: 3.1, unit: "mm", method: "마이크로미터", instrumentCode: "INS-002", frequency: "초중종물", isActive: true },
+  // 성능검사 항목
+  { id: 7, code: "INS-ITM-007", name: "토크검사", type: "공정검사", category: "성능", spec: "15 ± 2 Nm", lsl: 13, usl: 17, unit: "Nm", method: "토크렌치", instrumentCode: "INS-004", frequency: "전수", isActive: true },
+  { id: 8, code: "INS-ITM-008", name: "조립력검사", type: "출하검사", category: "성능", spec: "50 ± 10 N", lsl: 40, usl: 60, unit: "N", method: "푸시풀게이지", instrumentCode: null, frequency: "샘플링", isActive: true },
+  // 신뢰성검사 항목
+  { id: 9, code: "INS-ITM-009", name: "도막두께", type: "출하검사", category: "신뢰성", spec: "35 ± 5 μm", lsl: 30, usl: 40, unit: "μm", method: "도막두께계", instrumentCode: null, frequency: "LOT별", isActive: true },
+  { id: 10, code: "INS-ITM-010", name: "부착력검사", type: "출하검사", category: "신뢰성", spec: "100/100", lsl: null, usl: null, unit: "-", method: "Cross-cut", instrumentCode: null, frequency: "LOT별", isActive: true },
+  // 수입검사 항목
+  { id: 11, code: "INS-ITM-011", name: "원자재 외관", type: "수입검사", category: "외관", spec: "이물, 변색 없을 것", lsl: null, usl: null, unit: "-", method: "육안검사", instrumentCode: null, frequency: "LOT별", isActive: true },
+  { id: 12, code: "INS-ITM-012", name: "MI (용융지수)", type: "수입검사", category: "성능", spec: "10 ± 2 g/10min", lsl: 8, usl: 12, unit: "g/10min", method: "MI 측정기", instrumentCode: null, frequency: "LOT별", isActive: true },
+];
+
+export function getInspectionItems() { return inspectionItems; }
+export function getInspectionItemByCode(code: string) { return inspectionItems.find(i => i.code === code); }
+export function getInspectionItemsByType(type: string) { return inspectionItems.filter(i => i.type === type); }
+export function getInspectionItemsByCategory(category: string) { return inspectionItems.filter(i => i.category === category); }
+export function getActiveInspectionItems() { return inspectionItems.filter(i => i.isActive); }
+
+// ============ 교육과정 데이터 ============
+export interface TrainingCourse {
+  id: number;
+  code: string;
+  name: string;
+  type: "신입교육" | "정기교육" | "특별교육" | "자격교육" | "직무교육";
+  category: "품질" | "안전" | "환경" | "기술" | "관리";
+  targetDepartments: string[];
+  duration: number; // 시간
+  frequency: "입사시" | "연1회" | "반기1회" | "분기1회" | "수시";
+  description: string;
+  isRequired: boolean;
+  isActive: boolean;
+}
+
+export const trainingCourses: TrainingCourse[] = [
+  // 신입교육
+  { id: 1, code: "TRN-001", name: "신입사원 품질교육", type: "신입교육", category: "품질", targetDepartments: ["전체"], duration: 8, frequency: "입사시", description: "IATF 16949 기본, 품질시스템 이해", isRequired: true, isActive: true },
+  { id: 2, code: "TRN-002", name: "신입사원 안전교육", type: "신입교육", category: "안전", targetDepartments: ["전체"], duration: 4, frequency: "입사시", description: "산업안전보건, 작업장 안전수칙", isRequired: true, isActive: true },
+  // 정기교육
+  { id: 3, code: "TRN-003", name: "IATF 16949 인식교육", type: "정기교육", category: "품질", targetDepartments: ["전체"], duration: 4, frequency: "연1회", description: "자동차 품질경영시스템 요구사항", isRequired: true, isActive: true },
+  { id: 4, code: "TRN-004", name: "정기 안전교육", type: "정기교육", category: "안전", targetDepartments: ["전체"], duration: 2, frequency: "분기1회", description: "안전사고 예방, 비상대응", isRequired: true, isActive: true },
+  { id: 5, code: "TRN-005", name: "환경경영 교육", type: "정기교육", category: "환경", targetDepartments: ["전체"], duration: 2, frequency: "연1회", description: "환경방침, 폐기물 관리", isRequired: true, isActive: true },
+  // 직무교육
+  { id: 6, code: "TRN-006", name: "SPC 교육", type: "직무교육", category: "품질", targetDepartments: ["DEPT-003", "DEPT-004"], duration: 8, frequency: "연1회", description: "통계적공정관리 이론 및 실습", isRequired: false, isActive: true },
+  { id: 7, code: "TRN-007", name: "MSA 교육", type: "직무교육", category: "품질", targetDepartments: ["DEPT-003"], duration: 8, frequency: "연1회", description: "측정시스템분석", isRequired: false, isActive: true },
+  { id: 8, code: "TRN-008", name: "FMEA 교육", type: "직무교육", category: "품질", targetDepartments: ["DEPT-003", "DEPT-005"], duration: 8, frequency: "연1회", description: "잠재적 고장형태 및 영향분석", isRequired: false, isActive: true },
+  { id: 9, code: "TRN-009", name: "검사원 교육", type: "직무교육", category: "품질", targetDepartments: ["DEPT-003"], duration: 16, frequency: "연1회", description: "검사 기준, 계측기 사용법", isRequired: false, isActive: true },
+  // 자격교육
+  { id: 10, code: "TRN-010", name: "내부심사원 양성교육", type: "자격교육", category: "품질", targetDepartments: ["DEPT-003"], duration: 16, frequency: "수시", description: "내부심사 기법 및 실습", isRequired: false, isActive: true },
+  { id: 11, code: "TRN-011", name: "사출기 운전자격", type: "자격교육", category: "기술", targetDepartments: ["DEPT-004"], duration: 24, frequency: "수시", description: "사출기 운전 및 조건설정", isRequired: false, isActive: true },
+  { id: 12, code: "TRN-012", name: "도장 작업자격", type: "자격교육", category: "기술", targetDepartments: ["DEPT-004"], duration: 24, frequency: "수시", description: "도장설비 운전 및 품질관리", isRequired: false, isActive: true },
+  // 특별교육
+  { id: 13, code: "TRN-013", name: "고객클레임 분석교육", type: "특별교육", category: "품질", targetDepartments: ["DEPT-003", "DEPT-004"], duration: 4, frequency: "수시", description: "클레임 발생 시 원인분석", isRequired: false, isActive: true },
+  { id: 14, code: "TRN-014", name: "4M 변경관리 교육", type: "특별교육", category: "품질", targetDepartments: ["DEPT-003", "DEPT-004", "DEPT-005"], duration: 4, frequency: "수시", description: "변경점 관리 절차", isRequired: false, isActive: true },
+];
+
+export function getTrainingCourses() { return trainingCourses; }
+export function getTrainingCourseByCode(code: string) { return trainingCourses.find(t => t.code === code); }
+export function getTrainingCoursesByType(type: string) { return trainingCourses.filter(t => t.type === type); }
+export function getTrainingCoursesByCategory(category: string) { return trainingCourses.filter(t => t.category === category); }
+export function getRequiredTrainingCourses() { return trainingCourses.filter(t => t.isRequired && t.isActive); }
+export function getActiveTrainingCourses() { return trainingCourses.filter(t => t.isActive); }
+
+// ============ 공통코드 데이터 ============
+export interface CommonCode {
+  id: number;
+  groupCode: string;
+  groupName: string;
+  code: string;
+  name: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export const commonCodes: CommonCode[] = [
+  // 관리주기
+  { id: 1, groupCode: "FREQ", groupName: "관리주기", code: "DAILY", name: "일", sortOrder: 1, isActive: true },
+  { id: 2, groupCode: "FREQ", groupName: "관리주기", code: "WEEKLY", name: "주", sortOrder: 2, isActive: true },
+  { id: 3, groupCode: "FREQ", groupName: "관리주기", code: "MONTHLY", name: "월", sortOrder: 3, isActive: true },
+  { id: 4, groupCode: "FREQ", groupName: "관리주기", code: "QUARTERLY", name: "분기", sortOrder: 4, isActive: true },
+  { id: 5, groupCode: "FREQ", groupName: "관리주기", code: "SEMIANNUAL", name: "반기", sortOrder: 5, isActive: true },
+  { id: 6, groupCode: "FREQ", groupName: "관리주기", code: "YEARLY", name: "년", sortOrder: 6, isActive: true },
+  { id: 7, groupCode: "FREQ", groupName: "관리주기", code: "LOT", name: "LOT별", sortOrder: 7, isActive: true },
+  { id: 8, groupCode: "FREQ", groupName: "관리주기", code: "EVENT", name: "발생시", sortOrder: 8, isActive: true },
+  // 검사유형
+  { id: 9, groupCode: "INSP_TYPE", groupName: "검사유형", code: "INCOMING", name: "수입검사", sortOrder: 1, isActive: true },
+  { id: 10, groupCode: "INSP_TYPE", groupName: "검사유형", code: "PROCESS", name: "공정검사", sortOrder: 2, isActive: true },
+  { id: 11, groupCode: "INSP_TYPE", groupName: "검사유형", code: "FINAL", name: "출하검사", sortOrder: 3, isActive: true },
+  { id: 12, groupCode: "INSP_TYPE", groupName: "검사유형", code: "FIRST", name: "초물검사", sortOrder: 4, isActive: true },
+  // 판정
+  { id: 13, groupCode: "JUDGEMENT", groupName: "판정", code: "PASS", name: "합격", sortOrder: 1, isActive: true },
+  { id: 14, groupCode: "JUDGEMENT", groupName: "판정", code: "FAIL", name: "불합격", sortOrder: 2, isActive: true },
+  { id: 15, groupCode: "JUDGEMENT", groupName: "판정", code: "COND", name: "조건부합격", sortOrder: 3, isActive: true },
+  // 처리상태
+  { id: 16, groupCode: "STATUS", groupName: "처리상태", code: "OPEN", name: "진행중", sortOrder: 1, isActive: true },
+  { id: 17, groupCode: "STATUS", groupName: "처리상태", code: "CLOSED", name: "완료", sortOrder: 2, isActive: true },
+  { id: 18, groupCode: "STATUS", groupName: "처리상태", code: "PENDING", name: "대기", sortOrder: 3, isActive: true },
+  { id: 19, groupCode: "STATUS", groupName: "처리상태", code: "CANCEL", name: "취소", sortOrder: 4, isActive: true },
+  // 공급자등급
+  { id: 20, groupCode: "SUP_GRADE", groupName: "공급자등급", code: "A", name: "A (우수)", sortOrder: 1, isActive: true },
+  { id: 21, groupCode: "SUP_GRADE", groupName: "공급자등급", code: "B", name: "B (양호)", sortOrder: 2, isActive: true },
+  { id: 22, groupCode: "SUP_GRADE", groupName: "공급자등급", code: "C", name: "C (보통)", sortOrder: 3, isActive: true },
+  { id: 23, groupCode: "SUP_GRADE", groupName: "공급자등급", code: "D", name: "D (불량)", sortOrder: 4, isActive: true },
+  // 조치유형
+  { id: 24, groupCode: "ACTION_TYPE", groupName: "조치유형", code: "USE", name: "사용", sortOrder: 1, isActive: true },
+  { id: 25, groupCode: "ACTION_TYPE", groupName: "조치유형", code: "REWORK", name: "재작업", sortOrder: 2, isActive: true },
+  { id: 26, groupCode: "ACTION_TYPE", groupName: "조치유형", code: "SCRAP", name: "폐기", sortOrder: 3, isActive: true },
+  { id: 27, groupCode: "ACTION_TYPE", groupName: "조치유형", code: "RETURN", name: "반품", sortOrder: 4, isActive: true },
+  { id: 28, groupCode: "ACTION_TYPE", groupName: "조치유형", code: "SELECT", name: "선별", sortOrder: 5, isActive: true },
+  // 우선순위
+  { id: 29, groupCode: "PRIORITY", groupName: "우선순위", code: "HIGH", name: "높음", sortOrder: 1, isActive: true },
+  { id: 30, groupCode: "PRIORITY", groupName: "우선순위", code: "MEDIUM", name: "보통", sortOrder: 2, isActive: true },
+  { id: 31, groupCode: "PRIORITY", groupName: "우선순위", code: "LOW", name: "낮음", sortOrder: 3, isActive: true },
+  // 단위
+  { id: 32, groupCode: "UNIT", groupName: "단위", code: "EA", name: "EA", sortOrder: 1, isActive: true },
+  { id: 33, groupCode: "UNIT", groupName: "단위", code: "SET", name: "SET", sortOrder: 2, isActive: true },
+  { id: 34, groupCode: "UNIT", groupName: "단위", code: "KG", name: "KG", sortOrder: 3, isActive: true },
+  { id: 35, groupCode: "UNIT", groupName: "단위", code: "L", name: "L", sortOrder: 4, isActive: true },
+  { id: 36, groupCode: "UNIT", groupName: "단위", code: "M", name: "M", sortOrder: 5, isActive: true },
+];
+
+export function getCommonCodes() { return commonCodes; }
+export function getCommonCodesByGroup(groupCode: string) { return commonCodes.filter(c => c.groupCode === groupCode && c.isActive).sort((a, b) => a.sortOrder - b.sortOrder); }
+export function getCommonCodeByGroupAndCode(groupCode: string, code: string) { return commonCodes.find(c => c.groupCode === groupCode && c.code === code); }
+
+// ============ 치공구 데이터 ============
+export interface Jig {
+  id: number;
+  code: string;
+  name: string;
+  type: string;
+  processCode: string;
+  processName: string;
+  partCode: string | null;
+  partName: string | null;
+  location: string;
+  status: "사용중" | "점검중" | "수리중" | "보관" | "폐기";
+  lastInspectionDate: string;
+  nextInspectionDate: string;
+}
+
+export const jigs: Jig[] = [
+  { id: 1, code: "JIG-001", name: "범퍼FR 검사지그", type: "검사지그", processCode: "PRC-007", processName: "최종검사", partCode: "P-001", partName: "범퍼 커버 FR", location: "검사라인", status: "사용중", lastInspectionDate: "2025-01-15", nextInspectionDate: "2025-04-15" },
+  { id: 2, code: "JIG-002", name: "범퍼RR 검사지그", type: "검사지그", processCode: "PRC-007", processName: "최종검사", partCode: "P-002", partName: "범퍼 커버 RR", location: "검사라인", status: "사용중", lastInspectionDate: "2025-01-15", nextInspectionDate: "2025-04-15" },
+  { id: 3, code: "JIG-003", name: "그릴 조립지그", type: "조립지그", processCode: "PRC-006", processName: "조립공정", partCode: "P-003", partName: "라디에이터 그릴", location: "조립라인", status: "사용중", lastInspectionDate: "2025-02-01", nextInspectionDate: "2025-05-01" },
+  { id: 4, code: "JIG-004", name: "미러커버 도장지그", type: "도장지그", processCode: "PRC-003", processName: "프라이머도장", partCode: "P-004", partName: "사이드 미러 커버 LH", location: "도장라인", status: "사용중", lastInspectionDate: "2025-01-20", nextInspectionDate: "2025-04-20" },
+  { id: 5, code: "JIG-005", name: "도어핸들 조립지그", type: "조립지그", processCode: "PRC-006", processName: "조립공정", partCode: "P-006", partName: "도어 핸들 FR LH", location: "조립라인", status: "점검중", lastInspectionDate: "2025-02-10", nextInspectionDate: "2025-05-10" },
+];
+
+export function getJigs() { return jigs; }
+export function getJigByCode(code: string) { return jigs.find(j => j.code === code); }
+export function getJigsByProcess(processCode: string) { return jigs.filter(j => j.processCode === processCode); }
+export function getActiveJigs() { return jigs.filter(j => j.status === "사용중"); }
+
+// ============ 라인 데이터 (설비에서 추출) ============
+export function getProductionLines() {
+  return [...new Set(equipments.map(e => e.line))];
+}

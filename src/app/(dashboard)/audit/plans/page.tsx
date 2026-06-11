@@ -22,6 +22,7 @@ import {
   CheckCircle2,
   XCircle
 } from "lucide-react";
+import { getUsers, getActiveUsers, getUsersByDepartment, type User } from "@/lib/master-data";
 
 // ============ Types ============
 interface AnnualPlan {
@@ -64,6 +65,7 @@ interface PlanVsActual {
 
 interface Auditor {
   id: number;
+  userCode: string;
   name: string;
   employeeNo: string;
   department: string;
@@ -226,8 +228,9 @@ const initialAuditActuals: AuditActual[] = [
 const initialAuditors: Auditor[] = [
   {
     id: 1,
-    name: "김심사",
-    employeeNo: "EMP001",
+    userCode: "EMP-003",
+    name: "박품질",
+    employeeNo: "EMP-003",
     department: "품질관리팀",
     qualification: "선임심사원",
     qualificationDate: "2023-03-15",
@@ -237,8 +240,9 @@ const initialAuditors: Auditor[] = [
   },
   {
     id: 2,
-    name: "이검사",
-    employeeNo: "EMP002",
+    userCode: "EMP-008",
+    name: "한검사",
+    employeeNo: "EMP-008",
     department: "품질관리팀",
     qualification: "심사원",
     qualificationDate: "2024-06-20",
@@ -248,9 +252,10 @@ const initialAuditors: Auditor[] = [
   },
   {
     id: 3,
-    name: "박심사",
-    employeeNo: "EMP003",
-    department: "생산팀",
+    userCode: "EMP-004",
+    name: "최생산",
+    employeeNo: "EMP-004",
+    department: "생산관리팀",
     qualification: "심사원",
     qualificationDate: "2024-01-10",
     expiryDate: "2027-01-09",
@@ -259,9 +264,10 @@ const initialAuditors: Auditor[] = [
   },
   {
     id: 4,
-    name: "최심사",
-    employeeNo: "EMP004",
-    department: "품질관리팀",
+    userCode: "EMP-005",
+    name: "정기술",
+    employeeNo: "EMP-005",
+    department: "생산기술팀",
     qualification: "선임심사원",
     qualificationDate: "2022-09-01",
     expiryDate: "2025-08-31",
@@ -270,9 +276,10 @@ const initialAuditors: Auditor[] = [
   },
   {
     id: 5,
-    name: "정심사",
-    employeeNo: "EMP005",
-    department: "환경안전팀",
+    userCode: "EMP-007",
+    name: "윤설비",
+    employeeNo: "EMP-007",
+    department: "설비팀",
     qualification: "심사원",
     qualificationDate: "2025-02-15",
     expiryDate: "2028-02-14",
@@ -296,6 +303,9 @@ const qualificationOptions = ["선임심사원", "심사원", "심사원 후보"
 
 export default function AuditPlansPage() {
   const [activeTab, setActiveTab] = useState("annual-plan");
+
+  // Master data
+  const activeUsers = getActiveUsers();
 
   // Annual Plan state
   const [annualPlans, setAnnualPlans] = useState<AnnualPlan[]>(initialAnnualPlans);
@@ -335,6 +345,7 @@ export default function AuditPlansPage() {
   const [auditors, setAuditors] = useState<Auditor[]>(initialAuditors);
   const [showAuditorForm, setShowAuditorForm] = useState(false);
   const [auditorFormData, setAuditorFormData] = useState({
+    userCode: "",
     name: "",
     employeeNo: "",
     department: "",
@@ -465,6 +476,7 @@ export default function AuditPlansPage() {
     e.preventDefault();
     const newAuditor: Auditor = {
       id: Date.now(),
+      userCode: auditorFormData.userCode,
       name: auditorFormData.name,
       employeeNo: auditorFormData.employeeNo,
       department: auditorFormData.department,
@@ -477,6 +489,7 @@ export default function AuditPlansPage() {
     setAuditors([newAuditor, ...auditors]);
     setShowAuditorForm(false);
     setAuditorFormData({
+      userCode: "",
       name: "",
       employeeNo: "",
       department: "",
@@ -484,6 +497,19 @@ export default function AuditPlansPage() {
       qualificationDate: "",
       expiryDate: "",
     });
+  };
+
+  const handleUserSelectForAuditor = (userCode: string) => {
+    const selectedUser = activeUsers.find((u) => u.code === userCode);
+    if (selectedUser) {
+      setAuditorFormData({
+        ...auditorFormData,
+        userCode: selectedUser.code,
+        name: selectedUser.name,
+        employeeNo: selectedUser.code,
+        department: selectedUser.departmentName,
+      });
+    }
   };
 
   // Calculate audit count per auditor
@@ -1230,30 +1256,39 @@ export default function AuditPlansPage() {
                     <form onSubmit={handleAuditorSubmit} className="space-y-4">
                       <div className="grid gap-4 md:grid-cols-3">
                         <div className="space-y-2">
-                          <Label>성명 *</Label>
-                          <Input
-                            value={auditorFormData.name}
-                            onChange={(e) => setAuditorFormData({ ...auditorFormData, name: e.target.value })}
-                            placeholder="성명"
-                            required
-                          />
+                          <Label>사원 선택 *</Label>
+                          <Select
+                            value={auditorFormData.userCode}
+                            onValueChange={handleUserSelectForAuditor}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="사원 선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {activeUsers.map((user) => (
+                                <SelectItem key={user.code} value={user.code}>
+                                  {user.name} ({user.departmentName})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label>사번 *</Label>
+                          <Label>사번</Label>
                           <Input
                             value={auditorFormData.employeeNo}
-                            onChange={(e) => setAuditorFormData({ ...auditorFormData, employeeNo: e.target.value })}
+                            readOnly
+                            className="bg-muted"
                             placeholder="사번"
-                            required
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>소속부서 *</Label>
+                          <Label>소속부서</Label>
                           <Input
                             value={auditorFormData.department}
-                            onChange={(e) => setAuditorFormData({ ...auditorFormData, department: e.target.value })}
+                            readOnly
+                            className="bg-muted"
                             placeholder="소속부서"
-                            required
                           />
                         </div>
                       </div>

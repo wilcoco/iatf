@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,7 @@ import {
   Save,
   Search,
 } from "lucide-react";
+import { getInspectionItems, type InspectionItem } from "@/lib/master-data";
 
 // Control chart constants by subgroup size
 const CONTROL_CHART_CONSTANTS: Record<
@@ -108,39 +109,36 @@ interface ControlChartHistory {
   userId: string;
 }
 
-// Initial demo data
-const initialSetups: ControlChartSetup[] = [
-  {
-    id: "setup-1",
-    productName: "엔진 커버",
-    partNumber: "EC-2024-001",
-    processName: "사출 성형",
-    measurementItem: "외경 치수",
-    unit: "mm",
-    usl: 25.1,
-    lsl: 24.9,
-    target: 25.0,
-    chartType: "X-bar R",
+// Get inspection items from master data for SPC reference
+const masterDataInspectionItems = getInspectionItems();
+
+// Helper function to create initial setups from master data inspection items that have numeric specs
+function createInitialSetupsFromMasterData(): ControlChartSetup[] {
+  const itemsWithNumericSpecs = masterDataInspectionItems.filter(
+    (item) => item.lsl !== null || item.usl !== null
+  );
+
+  return itemsWithNumericSpecs.slice(0, 2).map((item, index) => ({
+    id: `setup-${index + 1}`,
+    productName: item.name,
+    partNumber: item.code,
+    processName: item.type,
+    measurementItem: item.name,
+    unit: item.unit,
+    usl: item.usl,
+    lsl: item.lsl,
+    target: item.lsl !== null && item.usl !== null
+      ? (item.lsl + item.usl) / 2
+      : item.usl ?? item.lsl,
+    chartType: "X-bar R" as ChartType,
     subgroupSize: 5,
     createdAt: "2024-01-15",
-    isActive: true,
-  },
-  {
-    id: "setup-2",
-    productName: "브레이크 패드",
-    partNumber: "BP-2024-003",
-    processName: "프레스",
-    measurementItem: "두께",
-    unit: "mm",
-    usl: 12.05,
-    lsl: 11.95,
-    target: 12.0,
-    chartType: "X-bar R",
-    subgroupSize: 5,
-    createdAt: "2024-02-01",
-    isActive: true,
-  },
-];
+    isActive: item.isActive,
+  }));
+}
+
+// Initial demo data - now based on master data inspection items
+const initialSetups: ControlChartSetup[] = createInitialSetupsFromMasterData();
 
 const initialMeasurements: MeasurementData[] = [
   {
@@ -238,6 +236,12 @@ const initialHistory: ControlChartHistory[] = [
 export default function SPCManagementPage() {
   const [activeTab, setActiveTab] = useState("setup");
 
+  // Get inspection items from master data for dropdown selection
+  const inspectionItemsWithSpecs = useMemo(() =>
+    masterDataInspectionItems.filter((item) => item.lsl !== null || item.usl !== null),
+    []
+  );
+
   // Tab 1: Control chart setups
   const [setups, setSetups] = useState<ControlChartSetup[]>(initialSetups);
   const [selectedSetupId, setSelectedSetupId] = useState<string | null>("setup-1");
@@ -316,6 +320,25 @@ export default function SPCManagementPage() {
       rCl: rBar,
       rLcl: constants.D3 * rBar,
     };
+  };
+
+  // Populate setup form from master data inspection item
+  const handleSelectInspectionItem = (itemCode: string) => {
+    const item = masterDataInspectionItems.find((i) => i.code === itemCode);
+    if (item) {
+      setNewSetup({
+        ...newSetup,
+        productName: item.name,
+        measurementItem: item.name,
+        processName: item.type,
+        unit: item.unit,
+        usl: item.usl,
+        lsl: item.lsl,
+        target: item.lsl !== null && item.usl !== null
+          ? (item.lsl + item.usl) / 2
+          : item.usl ?? item.lsl,
+      });
+    }
   };
 
   // Handle adding new setup
@@ -633,6 +656,26 @@ export default function SPCManagementPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {/* Master Data Inspection Item Selection */}
+                  <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
+                    <Label>기준정보에서 검사항목 선택 (선택 시 자동 입력)</Label>
+                    <Select onValueChange={handleSelectInspectionItem}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="검사항목 선택..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {inspectionItemsWithSpecs.map((item) => (
+                          <SelectItem key={item.code} value={item.code}>
+                            {item.name} ({item.type}) - {item.spec} [{item.unit}]
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      기준정보에 등록된 검사항목 중 규격값(LSL/USL)이 있는 항목만 표시됩니다.
+                    </p>
+                  </div>
+
                   <div className="grid gap-4 md:grid-cols-3">
                     <div className="space-y-2">
                       <Label htmlFor="productName">제품명 *</Label>

@@ -29,6 +29,7 @@ import {
   Building2,
   Info,
 } from "lucide-react";
+import { getActiveDefectTypes } from "@/lib/master-data";
 
 // Types
 interface MonthlyDefectData {

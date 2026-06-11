@@ -32,6 +32,7 @@ import {
   ArrowDown,
   Minus,
 } from "lucide-react";
+import { getInspectionItemsByType, type InspectionItem } from "@/lib/master-data";
 
 // Types
 interface InspectionResult {
@@ -127,42 +128,23 @@ export default function IncomingInspectionPage() {
   const [judgment, setJudgment] = useState<"합격" | "불합격" | "특채" | "">("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Tab 2: Standards state
-  const [standards, setStandards] = useState<InspectionStandard[]>([
-    {
-      id: 1,
-      materialCode: "MAT-001",
-      materialName: "철판 1.0T",
-      inspectionItem: "두께",
-      specification: "1.0 +/- 0.05mm",
-      inspectionMethod: "버니어캘리퍼스",
-      samplingLevel: "S-2",
-      aqlLevel: "1.0",
-      isActive: true,
-    },
-    {
-      id: 2,
-      materialCode: "MAT-001",
-      materialName: "철판 1.0T",
-      inspectionItem: "외관",
-      specification: "스크래치, 녹 없음",
-      inspectionMethod: "육안검사",
-      samplingLevel: "S-2",
-      aqlLevel: "0.65",
-      isActive: true,
-    },
-    {
-      id: 3,
-      materialCode: "MAT-002",
-      materialName: "볼트 M8x20",
-      inspectionItem: "길이",
-      specification: "20 +/- 0.3mm",
-      inspectionMethod: "버니어캘리퍼스",
-      samplingLevel: "S-3",
-      aqlLevel: "1.0",
-      isActive: true,
-    },
-  ]);
+  // Get incoming inspection items from master data
+  const incomingInspectionItems = useMemo(() => getInspectionItemsByType("수입검사"), []);
+
+  // Tab 2: Standards state - initialize from master data
+  const [standards, setStandards] = useState<InspectionStandard[]>(() => {
+    return incomingInspectionItems.map((item, index) => ({
+      id: item.id,
+      materialCode: `MAT-00${index + 1}`,
+      materialName: item.category === "외관" ? "원자재" : "수지류",
+      inspectionItem: item.name,
+      specification: item.spec,
+      inspectionMethod: item.method,
+      samplingLevel: item.frequency === "LOT별" ? "S-2" : "S-3",
+      aqlLevel: item.category === "외관" ? "0.65" : "1.0",
+      isActive: item.isActive,
+    }));
+  });
   const [standardFormData, setStandardFormData] = useState({
     materialCode: "",
     materialName: "",

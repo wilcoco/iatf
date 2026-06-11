@@ -32,6 +32,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { getActiveDefectTypes } from "@/lib/master-data";
 
 // Nonconformity Form Data Interface
 interface NonconformityFormData {
@@ -332,10 +333,11 @@ export default function NonconformityPage() {
                       <SelectValue placeholder="유형 선택" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="appearance">외관</SelectItem>
-                      <SelectItem value="dimension">치수</SelectItem>
-                      <SelectItem value="function">기능</SelectItem>
-                      <SelectItem value="other">기타</SelectItem>
+                      {getActiveDefectTypes().map((defect) => (
+                        <SelectItem key={defect.code} value={defect.code}>
+                          {defect.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

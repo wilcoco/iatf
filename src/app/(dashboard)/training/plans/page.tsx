@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Calendar, BarChart3, TrendingUp, Save, Trash2 } from "lucide-react";
+import { getActiveTrainingCourses, type TrainingCourse } from "@/lib/master-data";
 
 // Types
 interface MonthlyPlan {
@@ -39,19 +40,19 @@ interface MonthlyActual {
   trainingType: string;
 }
 
-// Sample data
+// Sample data - using training types from master-data.ts
 const initialPlans: AnnualPlan[] = [
   {
     id: 1,
     year: 2026,
     category: "사무실",
     monthlyPlans: [
-      { month: 1, trainingName: "안전보건교육", targetCount: 50, hours: 4, trainingType: "법정의무" },
-      { month: 2, trainingName: "품질관리교육", targetCount: 30, hours: 8, trainingType: "품질" },
-      { month: 3, trainingName: "정보보호교육", targetCount: 50, hours: 2, trainingType: "법정의무" },
-      { month: 4, trainingName: "직무능력향상", targetCount: 25, hours: 16, trainingType: "직무" },
-      { month: 5, trainingName: "안전보건교육", targetCount: 50, hours: 4, trainingType: "법정의무" },
-      { month: 6, trainingName: "화재예방교육", targetCount: 50, hours: 2, trainingType: "안전" },
+      { month: 1, trainingName: "정기 안전교육", targetCount: 50, hours: 2, trainingType: "정기교육" },
+      { month: 2, trainingName: "IATF 16949 인식교육", targetCount: 30, hours: 4, trainingType: "정기교육" },
+      { month: 3, trainingName: "SPC 교육", targetCount: 20, hours: 8, trainingType: "직무교육" },
+      { month: 4, trainingName: "MSA 교육", targetCount: 15, hours: 8, trainingType: "직무교육" },
+      { month: 5, trainingName: "환경경영 교육", targetCount: 50, hours: 2, trainingType: "정기교육" },
+      { month: 6, trainingName: "4M 변경관리 교육", targetCount: 30, hours: 4, trainingType: "특별교육" },
     ],
     createdAt: "2026-01-15",
   },
@@ -60,11 +61,11 @@ const initialPlans: AnnualPlan[] = [
     year: 2026,
     category: "현장",
     monthlyPlans: [
-      { month: 1, trainingName: "안전작업교육", targetCount: 100, hours: 8, trainingType: "안전" },
-      { month: 2, trainingName: "장비운용교육", targetCount: 80, hours: 16, trainingType: "직무" },
-      { month: 3, trainingName: "안전보건교육", targetCount: 100, hours: 4, trainingType: "법정의무" },
-      { month: 4, trainingName: "품질검사교육", targetCount: 60, hours: 8, trainingType: "품질" },
-      { month: 5, trainingName: "응급처치교육", targetCount: 50, hours: 4, trainingType: "안전" },
+      { month: 1, trainingName: "정기 안전교육", targetCount: 100, hours: 2, trainingType: "정기교육" },
+      { month: 2, trainingName: "사출기 운전자격", targetCount: 20, hours: 24, trainingType: "자격교육" },
+      { month: 3, trainingName: "검사원 교육", targetCount: 15, hours: 16, trainingType: "직무교육" },
+      { month: 4, trainingName: "도장 작업자격", targetCount: 15, hours: 24, trainingType: "자격교육" },
+      { month: 5, trainingName: "고객클레임 분석교육", targetCount: 30, hours: 4, trainingType: "특별교육" },
     ],
     createdAt: "2026-01-10",
   },
@@ -73,34 +74,41 @@ const initialPlans: AnnualPlan[] = [
     year: 2026,
     category: "신입사원",
     monthlyPlans: [
-      { month: 1, trainingName: "신입사원OJT", targetCount: 15, hours: 40, trainingType: "직무" },
-      { month: 3, trainingName: "신입사원OJT", targetCount: 10, hours: 40, trainingType: "직무" },
-      { month: 7, trainingName: "신입사원OJT", targetCount: 20, hours: 40, trainingType: "직무" },
-      { month: 9, trainingName: "신입사원OJT", targetCount: 12, hours: 40, trainingType: "직무" },
+      { month: 1, trainingName: "신입사원 품질교육", targetCount: 15, hours: 8, trainingType: "신입교육" },
+      { month: 3, trainingName: "신입사원 안전교육", targetCount: 10, hours: 4, trainingType: "신입교육" },
+      { month: 7, trainingName: "신입사원 품질교육", targetCount: 20, hours: 8, trainingType: "신입교육" },
+      { month: 9, trainingName: "신입사원 안전교육", targetCount: 12, hours: 4, trainingType: "신입교육" },
     ],
     createdAt: "2026-01-05",
   },
 ];
 
 const initialActuals: MonthlyActual[] = [
-  { id: 1, planId: 1, month: 1, trainingName: "안전보건교육", conductedDate: "2026-01-20", plannedCount: 50, actualCount: 48, trainingType: "법정의무" },
-  { id: 2, planId: 1, month: 2, trainingName: "품질관리교육", conductedDate: "2026-02-15", plannedCount: 30, actualCount: 32, trainingType: "품질" },
-  { id: 3, planId: 1, month: 3, trainingName: "정보보호교육", conductedDate: "2026-03-10", plannedCount: 50, actualCount: 45, trainingType: "법정의무" },
-  { id: 4, planId: 1, month: 4, trainingName: "직무능력향상", conductedDate: "2026-04-22", plannedCount: 25, actualCount: 25, trainingType: "직무" },
-  { id: 5, planId: 1, month: 5, trainingName: "안전보건교육", conductedDate: "2026-05-18", plannedCount: 50, actualCount: 52, trainingType: "법정의무" },
-  { id: 6, planId: 2, month: 1, trainingName: "안전작업교육", conductedDate: "2026-01-25", plannedCount: 100, actualCount: 95, trainingType: "안전" },
-  { id: 7, planId: 2, month: 2, trainingName: "장비운용교육", conductedDate: "2026-02-20", plannedCount: 80, actualCount: 78, trainingType: "직무" },
-  { id: 8, planId: 2, month: 3, trainingName: "안전보건교육", conductedDate: "2026-03-15", plannedCount: 100, actualCount: 98, trainingType: "법정의무" },
-  { id: 9, planId: 2, month: 4, trainingName: "품질검사교육", conductedDate: "2026-04-18", plannedCount: 60, actualCount: 55, trainingType: "품질" },
-  { id: 10, planId: 3, month: 1, trainingName: "신입사원OJT", conductedDate: "2026-01-08", plannedCount: 15, actualCount: 15, trainingType: "직무" },
-  { id: 11, planId: 3, month: 3, trainingName: "신입사원OJT", conductedDate: "2026-03-05", plannedCount: 10, actualCount: 10, trainingType: "직무" },
+  { id: 1, planId: 1, month: 1, trainingName: "정기 안전교육", conductedDate: "2026-01-20", plannedCount: 50, actualCount: 48, trainingType: "정기교육" },
+  { id: 2, planId: 1, month: 2, trainingName: "IATF 16949 인식교육", conductedDate: "2026-02-15", plannedCount: 30, actualCount: 32, trainingType: "정기교육" },
+  { id: 3, planId: 1, month: 3, trainingName: "SPC 교육", conductedDate: "2026-03-10", plannedCount: 20, actualCount: 18, trainingType: "직무교육" },
+  { id: 4, planId: 1, month: 4, trainingName: "MSA 교육", conductedDate: "2026-04-22", plannedCount: 15, actualCount: 15, trainingType: "직무교육" },
+  { id: 5, planId: 1, month: 5, trainingName: "환경경영 교육", conductedDate: "2026-05-18", plannedCount: 50, actualCount: 52, trainingType: "정기교육" },
+  { id: 6, planId: 2, month: 1, trainingName: "정기 안전교육", conductedDate: "2026-01-25", plannedCount: 100, actualCount: 95, trainingType: "정기교육" },
+  { id: 7, planId: 2, month: 2, trainingName: "사출기 운전자격", conductedDate: "2026-02-20", plannedCount: 20, actualCount: 18, trainingType: "자격교육" },
+  { id: 8, planId: 2, month: 3, trainingName: "검사원 교육", conductedDate: "2026-03-15", plannedCount: 15, actualCount: 15, trainingType: "직무교육" },
+  { id: 9, planId: 2, month: 4, trainingName: "도장 작업자격", conductedDate: "2026-04-18", plannedCount: 15, actualCount: 14, trainingType: "자격교육" },
+  { id: 10, planId: 3, month: 1, trainingName: "신입사원 품질교육", conductedDate: "2026-01-08", plannedCount: 15, actualCount: 15, trainingType: "신입교육" },
+  { id: 11, planId: 3, month: 3, trainingName: "신입사원 안전교육", conductedDate: "2026-03-05", plannedCount: 10, actualCount: 10, trainingType: "신입교육" },
 ];
 
 const MONTHS = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 const CATEGORIES = ["사무실", "현장", "신입사원"];
-const TRAINING_TYPES = ["법정의무", "품질", "안전", "직무"];
 
 export default function TrainingPlansPage() {
+  // Get training courses from master data
+  const trainingCourses = useMemo(() => getActiveTrainingCourses(), []);
+
+  // Extract unique training types from courses
+  const TRAINING_TYPES = useMemo(() => {
+    const types = new Set(trainingCourses.map((c) => c.type));
+    return Array.from(types);
+  }, [trainingCourses]);
   const [activeTab, setActiveTab] = useState("annual-plan");
   const [plans, setPlans] = useState<AnnualPlan[]>(initialPlans);
   const [actuals, setActuals] = useState<MonthlyActual[]>(initialActuals);
@@ -109,19 +117,27 @@ export default function TrainingPlansPage() {
   const [planYear, setPlanYear] = useState("2026");
   const [planCategory, setPlanCategory] = useState("사무실");
   const [newPlanMonth, setNewPlanMonth] = useState("1");
-  const [newPlanName, setNewPlanName] = useState("");
+  const [newPlanCourse, setNewPlanCourse] = useState(""); // Selected course code
   const [newPlanTarget, setNewPlanTarget] = useState("");
   const [newPlanHours, setNewPlanHours] = useState("");
-  const [newPlanType, setNewPlanType] = useState("법정의무");
+
+  // Get selected course details
+  const selectedCourse = useMemo(() => {
+    return trainingCourses.find((c) => c.code === newPlanCourse);
+  }, [newPlanCourse, trainingCourses]);
 
   // Tab 2: Monthly Actual State
   const [actualMonth, setActualMonth] = useState("1");
   const [actualCategory, setActualCategory] = useState("사무실");
-  const [newActualName, setNewActualName] = useState("");
+  const [newActualCourse, setNewActualCourse] = useState(""); // Selected course code
   const [newActualDate, setNewActualDate] = useState("");
   const [newActualPlanned, setNewActualPlanned] = useState("");
   const [newActualCount, setNewActualCount] = useState("");
-  const [newActualType, setNewActualType] = useState("법정의무");
+
+  // Get selected actual course details
+  const selectedActualCourse = useMemo(() => {
+    return trainingCourses.find((c) => c.code === newActualCourse);
+  }, [newActualCourse, trainingCourses]);
 
   // Filter plans by year and category
   const filteredPlans = plans.filter((p) => p.year === parseInt(planYear) && p.category === planCategory);
@@ -129,14 +145,14 @@ export default function TrainingPlansPage() {
 
   // Add monthly plan to annual plan
   const handleAddMonthlyPlan = () => {
-    if (!newPlanName || !newPlanTarget || !newPlanHours) return;
+    if (!selectedCourse || !newPlanTarget || !newPlanHours) return;
 
     const newMonthlyPlan: MonthlyPlan = {
       month: parseInt(newPlanMonth),
-      trainingName: newPlanName,
+      trainingName: selectedCourse.name,
       targetCount: parseInt(newPlanTarget),
       hours: parseInt(newPlanHours),
-      trainingType: newPlanType,
+      trainingType: selectedCourse.type,
     };
 
     if (currentPlan) {
@@ -157,7 +173,7 @@ export default function TrainingPlansPage() {
     }
 
     // Reset form
-    setNewPlanName("");
+    setNewPlanCourse("");
     setNewPlanTarget("");
     setNewPlanHours("");
   };
@@ -175,7 +191,7 @@ export default function TrainingPlansPage() {
 
   // Add monthly actual
   const handleAddActual = () => {
-    if (!newActualName || !newActualDate || !newActualPlanned || !newActualCount) return;
+    if (!selectedActualCourse || !newActualDate || !newActualPlanned || !newActualCount) return;
 
     const matchingPlan = plans.find((p) => p.year === parseInt(planYear) && p.category === actualCategory);
 
@@ -183,17 +199,17 @@ export default function TrainingPlansPage() {
       id: Date.now(),
       planId: matchingPlan?.id || 0,
       month: parseInt(actualMonth),
-      trainingName: newActualName,
+      trainingName: selectedActualCourse.name,
       conductedDate: newActualDate,
       plannedCount: parseInt(newActualPlanned),
       actualCount: parseInt(newActualCount),
-      trainingType: newActualType,
+      trainingType: selectedActualCourse.type,
     };
 
     setActuals([...actuals, newActual]);
 
     // Reset form
-    setNewActualName("");
+    setNewActualCourse("");
     setNewActualDate("");
     setNewActualPlanned("");
     setNewActualCount("");
@@ -255,7 +271,10 @@ export default function TrainingPlansPage() {
     // Calculate
     plans.forEach((plan) => {
       plan.monthlyPlans.forEach((mp) => {
-        statsByType[mp.trainingType].planned += mp.targetCount;
+        // Safe access - only update if type exists
+        if (statsByType[mp.trainingType]) {
+          statsByType[mp.trainingType].planned += mp.targetCount;
+        }
         statsByCategory[plan.category].planned += mp.targetCount;
         monthlyTrend[mp.month - 1].planned += mp.targetCount;
 
@@ -263,7 +282,9 @@ export default function TrainingPlansPage() {
           (a) => a.planId === plan.id && a.month === mp.month && a.trainingName === mp.trainingName
         );
         if (actual) {
-          statsByType[mp.trainingType].actual += actual.actualCount;
+          if (statsByType[mp.trainingType]) {
+            statsByType[mp.trainingType].actual += actual.actualCount;
+          }
           statsByCategory[plan.category].actual += actual.actualCount;
           monthlyTrend[mp.month - 1].actual += actual.actualCount;
         }
@@ -352,7 +373,7 @@ export default function TrainingPlansPage() {
                   <CardTitle className="text-lg">월별 교육계획 추가</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-6 gap-4">
+                  <div className="grid grid-cols-5 gap-4">
                     <div className="space-y-2">
                       <Label>월</Label>
                       <Select value={newPlanMonth} onValueChange={setNewPlanMonth}>
@@ -368,13 +389,20 @@ export default function TrainingPlansPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
-                      <Label>교육명</Label>
-                      <Input
-                        placeholder="교육명 입력"
-                        value={newPlanName}
-                        onChange={(e) => setNewPlanName(e.target.value)}
-                      />
+                    <div className="space-y-2 col-span-2">
+                      <Label>교육과정</Label>
+                      <Select value={newPlanCourse} onValueChange={setNewPlanCourse}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="교육과정 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {trainingCourses.map((course) => (
+                            <SelectItem key={course.code} value={course.code}>
+                              {course.name} ({course.type} / {course.category})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label>대상인원</Label>
@@ -389,33 +417,28 @@ export default function TrainingPlansPage() {
                       <Label>교육시간</Label>
                       <Input
                         type="number"
-                        placeholder="시간"
+                        placeholder={selectedCourse ? String(selectedCourse.duration) : "시간"}
                         value={newPlanHours}
                         onChange={(e) => setNewPlanHours(e.target.value)}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>교육유형</Label>
-                      <Select value={newPlanType} onValueChange={setNewPlanType}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TRAINING_TYPES.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  </div>
+                  {selectedCourse && (
+                    <div className="mt-3 p-3 bg-muted rounded-md text-sm">
+                      <div className="grid grid-cols-4 gap-2">
+                        <div><span className="text-muted-foreground">유형:</span> {selectedCourse.type}</div>
+                        <div><span className="text-muted-foreground">분류:</span> {selectedCourse.category}</div>
+                        <div><span className="text-muted-foreground">기본시간:</span> {selectedCourse.duration}시간</div>
+                        <div><span className="text-muted-foreground">주기:</span> {selectedCourse.frequency}</div>
+                      </div>
+                      <div className="mt-2 text-muted-foreground">{selectedCourse.description}</div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>&nbsp;</Label>
-                      <Button onClick={handleAddMonthlyPlan} className="w-full">
-                        <Plus className="mr-2 h-4 w-4" />
-                        추가
-                      </Button>
-                    </div>
+                  )}
+                  <div className="mt-4 flex justify-end">
+                    <Button onClick={handleAddMonthlyPlan}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      추가
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -444,11 +467,13 @@ export default function TrainingPlansPage() {
                         <TableCell>
                           <Badge
                             variant={
-                              mp.trainingType === "법정의무"
+                              mp.trainingType === "신입교육"
                                 ? "destructive"
-                                : mp.trainingType === "안전"
+                                : mp.trainingType === "정기교육"
+                                ? "default"
+                                : mp.trainingType === "특별교육"
                                 ? "warning"
-                                : mp.trainingType === "품질"
+                                : mp.trainingType === "자격교육"
                                 ? "success"
                                 : "secondary"
                             }
@@ -527,14 +552,21 @@ export default function TrainingPlansPage() {
                   <CardTitle className="text-lg">실적 추가</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-6 gap-4">
-                    <div className="space-y-2">
-                      <Label>교육명</Label>
-                      <Input
-                        placeholder="교육명"
-                        value={newActualName}
-                        onChange={(e) => setNewActualName(e.target.value)}
-                      />
+                  <div className="grid grid-cols-5 gap-4">
+                    <div className="space-y-2 col-span-2">
+                      <Label>교육과정</Label>
+                      <Select value={newActualCourse} onValueChange={setNewActualCourse}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="교육과정 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {trainingCourses.map((course) => (
+                            <SelectItem key={course.code} value={course.code}>
+                              {course.name} ({course.type} / {course.category})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label>실시일</Label>
@@ -562,28 +594,22 @@ export default function TrainingPlansPage() {
                         onChange={(e) => setNewActualCount(e.target.value)}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>교육유형</Label>
-                      <Select value={newActualType} onValueChange={setNewActualType}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TRAINING_TYPES.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  </div>
+                  {selectedActualCourse && (
+                    <div className="mt-3 p-3 bg-background rounded-md text-sm">
+                      <div className="grid grid-cols-4 gap-2">
+                        <div><span className="text-muted-foreground">유형:</span> {selectedActualCourse.type}</div>
+                        <div><span className="text-muted-foreground">분류:</span> {selectedActualCourse.category}</div>
+                        <div><span className="text-muted-foreground">기본시간:</span> {selectedActualCourse.duration}시간</div>
+                        <div><span className="text-muted-foreground">주기:</span> {selectedActualCourse.frequency}</div>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>&nbsp;</Label>
-                      <Button onClick={handleAddActual} className="w-full">
-                        <Save className="mr-2 h-4 w-4" />
-                        저장
-                      </Button>
-                    </div>
+                  )}
+                  <div className="mt-4 flex justify-end">
+                    <Button onClick={handleAddActual}>
+                      <Save className="mr-2 h-4 w-4" />
+                      저장
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -619,11 +645,13 @@ export default function TrainingPlansPage() {
                           <TableCell>
                             <Badge
                               variant={
-                                actual.trainingType === "법정의무"
+                                actual.trainingType === "신입교육"
                                   ? "destructive"
-                                  : actual.trainingType === "안전"
+                                  : actual.trainingType === "정기교육"
+                                  ? "default"
+                                  : actual.trainingType === "특별교육"
                                   ? "warning"
-                                  : actual.trainingType === "품질"
+                                  : actual.trainingType === "자격교육"
                                   ? "success"
                                   : "secondary"
                               }
@@ -777,11 +805,13 @@ export default function TrainingPlansPage() {
                           <TableCell>
                             <Badge
                               variant={
-                                type === "법정의무"
+                                type === "신입교육"
                                   ? "destructive"
-                                  : type === "안전"
+                                  : type === "정기교육"
+                                  ? "default"
+                                  : type === "특별교육"
                                   ? "warning"
-                                  : type === "품질"
+                                  : type === "자격교육"
                                   ? "success"
                                   : "secondary"
                               }

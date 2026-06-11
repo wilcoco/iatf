@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ import {
   AlertTriangle,
   RotateCcw,
 } from "lucide-react";
+import { getInspectionItemsByType, type InspectionItem as MasterInspectionItem } from "@/lib/master-data";
 
 // Types
 interface InspectionItem {
@@ -93,8 +94,30 @@ function generateInspectionNo(prefix: string): string {
   return `${prefix}-${date}-${seq}`;
 }
 
+// Helper function to create inspection items from master data
+function createInspectionItemsFromMasterData(masterDataItems: MasterInspectionItem[]): {
+  id: number;
+  itemName: string;
+  specUpper: string;
+  specLower: string;
+  measuredValue: string;
+  result: "양호" | "불량" | "";
+}[] {
+  return masterDataItems.map((item) => ({
+    id: item.id,
+    itemName: `${item.name} (${item.spec})`,
+    specUpper: item.usl !== null ? String(item.usl) : "",
+    specLower: item.lsl !== null ? String(item.lsl) : "",
+    measuredValue: "",
+    result: "" as "양호" | "불량" | "",
+  }));
+}
+
 export default function ProcessInspectionPage() {
   const [activeTab, setActiveTab] = useState("registration");
+
+  // Get process inspection items from master data
+  const processInspectionItems = useMemo(() => getInspectionItemsByType("공정검사"), []);
 
   // Tab 1: Process Inspection Registration State
   const [processForm, setProcessForm] = useState({
@@ -110,9 +133,10 @@ export default function ProcessInspectionPage() {
     inspector: "",
   });
 
-  const [processItems, setProcessItems] = useState<InspectionItem[]>([
-    { id: 1, itemName: "", specUpper: "", specLower: "", measuredValue: "", result: "" },
-  ]);
+  // Initialize process items from master data
+  const [processItems, setProcessItems] = useState<InspectionItem[]>(() =>
+    createInspectionItemsFromMasterData(processInspectionItems)
+  );
 
   const [processOverallResult, setProcessOverallResult] = useState<"양호" | "불량" | "">("");
   const [processRemarks, setProcessRemarks] = useState("");
@@ -134,9 +158,9 @@ export default function ProcessInspectionPage() {
     result: "" as "양호" | "불량" | "",
   });
 
-  const [firstItems, setFirstItems] = useState<InspectionItem[]>([
-    { id: 1, itemName: "", specUpper: "", specLower: "", measuredValue: "", result: "" },
-  ]);
+  const [firstItems, setFirstItems] = useState<InspectionItem[]>(() =>
+    createInspectionItemsFromMasterData(processInspectionItems)
+  );
 
   const [lastInspection, setLastInspection] = useState({
     time: "",
@@ -144,9 +168,9 @@ export default function ProcessInspectionPage() {
     result: "" as "양호" | "불량" | "",
   });
 
-  const [lastItems, setLastItems] = useState<InspectionItem[]>([
-    { id: 1, itemName: "", specUpper: "", specLower: "", measuredValue: "", result: "" },
-  ]);
+  const [lastItems, setLastItems] = useState<InspectionItem[]>(() =>
+    createInspectionItemsFromMasterData(processInspectionItems)
+  );
 
   const [firstLastRemarks, setFirstLastRemarks] = useState("");
   const [firstLastHistory, setFirstLastHistory] = useState<FirstLastInspection[]>([]);
@@ -274,7 +298,7 @@ export default function ProcessInspectionPage() {
       lotNo: "",
       inspector: "",
     });
-    setProcessItems([{ id: 1, itemName: "", specUpper: "", specLower: "", measuredValue: "", result: "" }]);
+    setProcessItems(createInspectionItemsFromMasterData(processInspectionItems));
     setProcessOverallResult("");
     setProcessRemarks("");
 
@@ -332,9 +356,9 @@ export default function ProcessInspectionPage() {
       lotNo: "",
     });
     setFirstInspection({ time: "", inspector: "", result: "" });
-    setFirstItems([{ id: 1, itemName: "", specUpper: "", specLower: "", measuredValue: "", result: "" }]);
+    setFirstItems(createInspectionItemsFromMasterData(processInspectionItems));
     setLastInspection({ time: "", inspector: "", result: "" });
-    setLastItems([{ id: 1, itemName: "", specUpper: "", specLower: "", measuredValue: "", result: "" }]);
+    setLastItems(createInspectionItemsFromMasterData(processInspectionItems));
     setFirstLastRemarks("");
 
     alert("초물/종물 검사 기록이 저장되었습니다.");

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ClipboardCheck, Plus, Save } from "lucide-react";
+import { getCommonCodesByGroup, type CommonCode } from "@/lib/master-data";
 
 interface SupplierEvaluation {
   id: number;
@@ -31,6 +32,10 @@ export default function SupplierEvaluationsPage() {
   const [evaluations, setEvaluations] = useState<SupplierEvaluation[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [gradeFilter, setGradeFilter] = useState("");
+
+  const supplierGrades = getCommonCodesByGroup("SUP_GRADE");
+
   const [formData, setFormData] = useState({
     evaluationDate: new Date().toISOString().split("T")[0],
     evaluationType: "",
@@ -48,13 +53,22 @@ export default function SupplierEvaluationsPage() {
     setLoading(false);
   }, []);
 
-  const calculateGrade = (score: number) => {
+  const calculateGrade = (score: number): string => {
     if (score >= 90) return "A";
     if (score >= 80) return "B";
     if (score >= 70) return "C";
-    if (score >= 60) return "D";
-    return "F";
+    return "D";
   };
+
+  const getGradeName = (gradeCode: string) => {
+    const grade = supplierGrades.find(g => g.code === gradeCode);
+    return grade ? grade.name : gradeCode;
+  };
+
+  const filteredEvaluations = evaluations.filter((e) => {
+    if (!gradeFilter) return true;
+    return e.grade === gradeFilter;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,6 +122,23 @@ export default function SupplierEvaluationsPage() {
           <Plus className="mr-2 h-4 w-4" />
           평가 등록
         </Button>
+      </div>
+
+      <div className="flex gap-4 items-center">
+        <div className="space-y-1">
+          <label className="text-sm font-medium">등급 필터</label>
+          <Select value={gradeFilter} onValueChange={setGradeFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="전체" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">전체</SelectItem>
+              {supplierGrades.map((g) => (
+                <SelectItem key={g.code} value={g.code}>{g.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {showForm && (
@@ -241,7 +272,7 @@ export default function SupplierEvaluationsPage() {
         <CardContent>
           {loading ? (
             <p>로딩 중...</p>
-          ) : evaluations.length === 0 ? (
+          ) : filteredEvaluations.length === 0 ? (
             <p className="text-muted-foreground py-8 text-center">평가 기록이 없습니다.</p>
           ) : (
             <Table>
@@ -260,7 +291,7 @@ export default function SupplierEvaluationsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {evaluations.map((e) => (
+                {filteredEvaluations.map((e) => (
                   <TableRow key={e.id}>
                     <TableCell>{e.evaluationDate}</TableCell>
                     <TableCell><Badge variant="outline">{e.evaluationType}</Badge></TableCell>
@@ -272,7 +303,7 @@ export default function SupplierEvaluationsPage() {
                     <TableCell className="text-right font-bold">{e.totalScore}</TableCell>
                     <TableCell>
                       <Badge variant={e.grade === "A" || e.grade === "B" ? "success" : e.grade === "C" ? "warning" : "destructive"}>
-                        {e.grade}
+                        {getGradeName(e.grade)}
                       </Badge>
                     </TableCell>
                     <TableCell>{e.evaluator}</TableCell>

@@ -11,18 +11,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wrench, Plus, Save, ClipboardCheck, FileCheck, BarChart3, History, CheckCircle, XCircle } from "lucide-react";
+import { getJigs, type Jig } from "@/lib/master-data";
 
 // Types
 interface JigFixture {
   id: string;
+  code: string;
   name: string;
-  managementNo: string;
-  partNo: string;
-  process: string;
-  line: string;
-  manager: string;
-  installDate: string;
-  status: "active" | "inactive" | "maintenance";
+  type: string;
+  processName: string;
+  partName: string | null;
+  location: string;
+  status: "사용중" | "점검중" | "수리중" | "보관" | "폐기";
+  lastInspectionDate: string;
+  nextInspectionDate: string;
 }
 
 interface MassProductionCheckItem {
@@ -78,13 +80,24 @@ interface InspectionHistory {
   remarks: string;
 }
 
-// Sample jig/fixture data
-const initialJigFixtures: JigFixture[] = [
-  { id: "JIG-001", name: "프레스 지그 A", managementNo: "MBD0016A572", partNo: "P-2024-001", process: "프레스", line: "A라인", manager: "김철수", installDate: "2024-01-15", status: "active" },
-  { id: "JIG-002", name: "용접 치구 B", managementNo: "MBD0016D307", partNo: "P-2024-002", process: "용접", line: "A라인", manager: "이영희", installDate: "2024-02-20", status: "active" },
-  { id: "JIG-003", name: "조립 지그 C", managementNo: "MBD0016E125", partNo: "P-2024-003", process: "조립", line: "B라인", manager: "박민수", installDate: "2024-03-10", status: "active" },
-  { id: "JIG-004", name: "검사 치구 D", managementNo: "MBD0016F890", partNo: "P-2024-004", process: "검사", line: "B라인", manager: "최지은", installDate: "2024-04-05", status: "maintenance" },
-];
+// Load jig/fixture data from master data
+const loadJigFixtures = (): JigFixture[] => {
+  const masterJigs = getJigs();
+  return masterJigs.map((jig: Jig) => ({
+    id: jig.code,
+    code: jig.code,
+    name: jig.name,
+    type: jig.type,
+    processName: jig.processName,
+    partName: jig.partName,
+    location: jig.location,
+    status: jig.status,
+    lastInspectionDate: jig.lastInspectionDate,
+    nextInspectionDate: jig.nextInspectionDate,
+  }));
+};
+
+const initialJigFixtures: JigFixture[] = loadJigFixtures();
 
 // Sample mass production check items (양산성 점검 항목)
 const initialMassProductionCheckItems: MassProductionCheckItem[] = [
@@ -212,24 +225,24 @@ export default function JigInspectionPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>관리번호</Label>
-              <Input value={jig?.managementNo || "-"} disabled />
+              <Label>지그코드</Label>
+              <Input value={jig?.code || "-"} disabled />
             </div>
             <div className="space-y-2">
-              <Label>품번</Label>
-              <Input value={jig?.partNo || "-"} disabled />
+              <Label>품목명</Label>
+              <Input value={jig?.partName || "-"} disabled />
             </div>
             <div className="space-y-2">
               <Label>공정</Label>
-              <Input value={jig?.process || "-"} disabled />
+              <Input value={jig?.processName || "-"} disabled />
             </div>
             <div className="space-y-2">
-              <Label>라인</Label>
-              <Input value={jig?.line || "-"} disabled />
+              <Label>위치</Label>
+              <Input value={jig?.location || "-"} disabled />
             </div>
             <div className="space-y-2">
-              <Label>담당자</Label>
-              <Input value={jig?.manager || "-"} disabled />
+              <Label>상태</Label>
+              <Input value={jig?.status || "-"} disabled />
             </div>
           </div>
         </CardContent>
@@ -281,26 +294,28 @@ export default function JigInspectionPage() {
                 const jig = jigFixtures.find(j => j.id === selectedJig);
                 if (!jig) return null;
                 return (
-                  <div className="grid gap-4 md:grid-cols-4">
+                  <div className="grid gap-4 md:grid-cols-5">
                     <div>
                       <Label className="text-muted-foreground">치공구명</Label>
                       <p className="font-medium">{jig.name}</p>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">설치일</Label>
-                      <p className="font-medium">{jig.installDate}</p>
+                      <Label className="text-muted-foreground">유형</Label>
+                      <p className="font-medium">{jig.type}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">상태</Label>
-                      <Badge variant={jig.status === "active" ? "success" : jig.status === "maintenance" ? "secondary" : "destructive"}>
-                        {jig.status === "active" ? "사용중" : jig.status === "maintenance" ? "보전중" : "비활성"}
+                      <Badge variant={jig.status === "사용중" ? "success" : jig.status === "점검중" || jig.status === "수리중" ? "secondary" : "destructive"}>
+                        {jig.status}
                       </Badge>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">최근 점검일</Label>
-                      <p className="font-medium">
-                        {filteredResults.length > 0 ? filteredResults[0].checkDate : "-"}
-                      </p>
+                      <Label className="text-muted-foreground">최종 점검일</Label>
+                      <p className="font-medium">{jig.lastInspectionDate || "-"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">차기 점검일</Label>
+                      <p className="font-medium">{jig.nextInspectionDate || "-"}</p>
                     </div>
                   </div>
                 );
@@ -756,7 +771,7 @@ export default function JigInspectionPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">
-                {filteredJigs.filter(j => j.status === "maintenance").length}
+                {filteredJigs.filter(j => j.status === "점검중" || j.status === "수리중").length}
               </div>
               <p className="text-xs text-muted-foreground">보전/수리 필요 치공구</p>
             </CardContent>
@@ -775,10 +790,10 @@ export default function JigInspectionPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>치공구번호</TableHead>
+                  <TableHead>지그코드</TableHead>
                   <TableHead>치공구명</TableHead>
-                  <TableHead>공정/라인</TableHead>
-                  <TableHead>담당자</TableHead>
+                  <TableHead>공정/위치</TableHead>
+                  <TableHead>품목명</TableHead>
                   <TableHead className="text-center">최근 양산성 점검</TableHead>
                   <TableHead className="text-center">양산성 결과</TableHead>
                   <TableHead className="text-center">최근 정기 점검</TableHead>
@@ -791,10 +806,10 @@ export default function JigInspectionPage() {
                   const stats = getJigStats(jig.id);
                   return (
                     <TableRow key={jig.id}>
-                      <TableCell className="font-mono">{jig.id}</TableCell>
+                      <TableCell className="font-mono">{jig.code}</TableCell>
                       <TableCell className="font-medium">{jig.name}</TableCell>
-                      <TableCell>{jig.process} / {jig.line}</TableCell>
-                      <TableCell>{jig.manager}</TableCell>
+                      <TableCell>{jig.processName} / {jig.location}</TableCell>
+                      <TableCell>{jig.partName || "-"}</TableCell>
                       <TableCell className="text-center">{stats.lastMassProductionDate}</TableCell>
                       <TableCell className="text-center">
                         {stats.lastMassProductionResult && (
@@ -826,12 +841,11 @@ export default function JigInspectionPage() {
                       <TableCell className="text-center">
                         <Badge
                           variant={
-                            jig.status === "active" ? "success" :
-                            jig.status === "maintenance" ? "secondary" : "destructive"
+                            jig.status === "사용중" ? "success" :
+                            jig.status === "점검중" || jig.status === "수리중" ? "secondary" : "destructive"
                           }
                         >
-                          {jig.status === "active" ? "사용중" :
-                           jig.status === "maintenance" ? "보전중" : "비활성"}
+                          {jig.status}
                         </Badge>
                       </TableCell>
                     </TableRow>

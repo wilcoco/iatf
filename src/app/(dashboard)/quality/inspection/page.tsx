@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClipboardCheck, Plus, Save, Trash2, CheckCircle, XCircle, Search, History } from "lucide-react";
+import { getUsers, getActiveUsers, getUsersByDepartment, type User } from "@/lib/master-data";
 
 // Types
 interface InspectionItem {
@@ -51,11 +52,16 @@ function generateInspectionNo(type: string): string {
 export default function InspectionReportPage() {
   const [activeTab, setActiveTab] = useState("registration");
 
+  // Master data - get users from quality management department for inspectors
+  const activeUsers = getActiveUsers();
+  const qualityUsers = getUsersByDepartment("DEPT-003"); // 품질관리팀
+
   // Form state for registration
   const [formData, setFormData] = useState({
     inspectionNo: generateInspectionNo("수입검사"),
     inspectionDate: new Date().toISOString().split("T")[0],
     inspectionType: "수입검사" as "수입검사" | "공정검사" | "출하검사",
+    inspectorCode: "",
     inspector: "",
     productName: "",
     partNo: "",
@@ -171,6 +177,7 @@ export default function InspectionReportPage() {
       inspectionNo: generateInspectionNo("수입검사"),
       inspectionDate: new Date().toISOString().split("T")[0],
       inspectionType: "수입검사",
+      inspectorCode: "",
       inspector: "",
       productName: "",
       partNo: "",
@@ -272,12 +279,28 @@ export default function InspectionReportPage() {
                       </div>
                       <div className="space-y-2">
                         <Label>검사자 *</Label>
-                        <Input
-                          value={formData.inspector}
-                          onChange={(e) => setFormData({ ...formData, inspector: e.target.value })}
-                          placeholder="검사자명"
-                          required
-                        />
+                        <Select
+                          value={formData.inspectorCode}
+                          onValueChange={(value) => {
+                            const selectedUser = activeUsers.find((u) => u.code === value);
+                            setFormData({
+                              ...formData,
+                              inspectorCode: value,
+                              inspector: selectedUser?.name || "",
+                            });
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="검사자 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {activeUsers.map((user) => (
+                              <SelectItem key={user.code} value={user.code}>
+                                {user.name} ({user.departmentName})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>

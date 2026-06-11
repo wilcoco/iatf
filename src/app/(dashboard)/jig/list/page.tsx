@@ -9,15 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Cog, Plus, Save, Search } from "lucide-react";
+import { getJigs, type Jig } from "@/lib/master-data";
 
 interface JigRecord {
   id: number;
   jigNo: string;
   jigName: string;
   jigType: string;
-  vehicleType: string;
-  acquisitionDate: string;
-  inspectionCycle: string;
+  processName: string;
+  partName: string;
+  location: string;
   lastInspectionDate: string;
   nextInspectionDate: string;
   status: string;
@@ -32,15 +33,30 @@ export default function JigListPage() {
     jigNo: "",
     jigName: "",
     jigType: "",
-    vehicleType: "",
-    acquisitionDate: new Date().toISOString().split("T")[0],
-    inspectionCycle: "",
+    processName: "",
+    partName: "",
+    location: "",
     lastInspectionDate: "",
     nextInspectionDate: "",
     status: "",
   });
 
   useEffect(() => {
+    // Load jigs from master data
+    const masterJigs = getJigs();
+    const initialRecords: JigRecord[] = masterJigs.map((jig: Jig) => ({
+      id: jig.id,
+      jigNo: jig.code,
+      jigName: jig.name,
+      jigType: jig.type,
+      processName: jig.processName,
+      partName: jig.partName || "-",
+      location: jig.location,
+      lastInspectionDate: jig.lastInspectionDate,
+      nextInspectionDate: jig.nextInspectionDate,
+      status: jig.status,
+    }));
+    setRecords(initialRecords);
     setLoading(false);
   }, []);
 
@@ -48,7 +64,15 @@ export default function JigListPage() {
     e.preventDefault();
     const newRecord: JigRecord = {
       id: Date.now(),
-      ...formData,
+      jigNo: formData.jigNo,
+      jigName: formData.jigName,
+      jigType: formData.jigType,
+      processName: formData.processName,
+      partName: formData.partName,
+      location: formData.location,
+      lastInspectionDate: formData.lastInspectionDate,
+      nextInspectionDate: formData.nextInspectionDate,
+      status: formData.status,
     };
     setRecords([newRecord, ...records]);
     setShowForm(false);
@@ -56,9 +80,9 @@ export default function JigListPage() {
       jigNo: "",
       jigName: "",
       jigType: "",
-      vehicleType: "",
-      acquisitionDate: new Date().toISOString().split("T")[0],
-      inspectionCycle: "",
+      processName: "",
+      partName: "",
+      location: "",
       lastInspectionDate: "",
       nextInspectionDate: "",
       status: "",
@@ -70,16 +94,20 @@ export default function JigListPage() {
     (r) =>
       r.jigNo.toLowerCase().includes(search.toLowerCase()) ||
       r.jigName.toLowerCase().includes(search.toLowerCase()) ||
-      r.vehicleType.toLowerCase().includes(search.toLowerCase())
+      r.processName.toLowerCase().includes(search.toLowerCase()) ||
+      r.location.toLowerCase().includes(search.toLowerCase())
   );
 
   const getStatusVariant = (status: string) => {
     switch (status) {
       case "사용중":
         return "success";
-      case "점검필요":
+      case "점검중":
+      case "수리중":
         return "warning";
-      case "사용불가":
+      case "보관":
+        return "secondary";
+      case "폐기":
         return "destructive";
       default:
         return "outline";
@@ -108,11 +136,11 @@ export default function JigListPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="space-y-2">
-                  <Label>지그번호 *</Label>
+                  <Label>지그코드 *</Label>
                   <Input
                     value={formData.jigNo}
                     onChange={(e) => setFormData({ ...formData, jigNo: e.target.value })}
-                    placeholder="J-001"
+                    placeholder="JIG-001"
                     required
                   />
                 </div>
@@ -130,17 +158,18 @@ export default function JigListPage() {
                   <Select value={formData.jigType} onValueChange={(v) => setFormData({ ...formData, jigType: v })} required>
                     <SelectTrigger><SelectValue placeholder="선택" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="도장">도장</SelectItem>
-                      <SelectItem value="조립">조립</SelectItem>
+                      <SelectItem value="검사지그">검사지그</SelectItem>
+                      <SelectItem value="조립지그">조립지그</SelectItem>
+                      <SelectItem value="도장지그">도장지그</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>차종 *</Label>
+                  <Label>공정명 *</Label>
                   <Input
-                    value={formData.vehicleType}
-                    onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
-                    placeholder="차종을 입력하세요"
+                    value={formData.processName}
+                    onChange={(e) => setFormData({ ...formData, processName: e.target.value })}
+                    placeholder="공정명을 입력하세요"
                     required
                   />
                 </div>
@@ -148,25 +177,21 @@ export default function JigListPage() {
 
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="space-y-2">
-                  <Label>취득일자 *</Label>
+                  <Label>품목명</Label>
                   <Input
-                    type="date"
-                    value={formData.acquisitionDate}
-                    onChange={(e) => setFormData({ ...formData, acquisitionDate: e.target.value })}
-                    required
+                    value={formData.partName}
+                    onChange={(e) => setFormData({ ...formData, partName: e.target.value })}
+                    placeholder="품목명을 입력하세요"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>점검주기 *</Label>
-                  <Select value={formData.inspectionCycle} onValueChange={(v) => setFormData({ ...formData, inspectionCycle: v })} required>
-                    <SelectTrigger><SelectValue placeholder="선택" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1개월">1개월</SelectItem>
-                      <SelectItem value="3개월">3개월</SelectItem>
-                      <SelectItem value="6개월">6개월</SelectItem>
-                      <SelectItem value="12개월">12개월</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>위치 *</Label>
+                  <Input
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    placeholder="위치를 입력하세요"
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>최종점검일</Label>
@@ -193,8 +218,10 @@ export default function JigListPage() {
                     <SelectTrigger><SelectValue placeholder="선택" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="사용중">사용중</SelectItem>
-                      <SelectItem value="점검필요">점검필요</SelectItem>
-                      <SelectItem value="사용불가">사용불가</SelectItem>
+                      <SelectItem value="점검중">점검중</SelectItem>
+                      <SelectItem value="수리중">수리중</SelectItem>
+                      <SelectItem value="보관">보관</SelectItem>
+                      <SelectItem value="폐기">폐기</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -212,7 +239,7 @@ export default function JigListPage() {
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="지그번호, 지그명, 차종으로 검색..."
+          placeholder="지그코드, 지그명, 공정명, 위치로 검색..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-10"
@@ -235,12 +262,12 @@ export default function JigListPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>지그번호</TableHead>
+                  <TableHead>지그코드</TableHead>
                   <TableHead>지그명</TableHead>
                   <TableHead>지그유형</TableHead>
-                  <TableHead>차종</TableHead>
-                  <TableHead>취득일자</TableHead>
-                  <TableHead>점검주기</TableHead>
+                  <TableHead>공정명</TableHead>
+                  <TableHead>품목명</TableHead>
+                  <TableHead>위치</TableHead>
                   <TableHead>최종점검일</TableHead>
                   <TableHead>차기점검일</TableHead>
                   <TableHead>상태</TableHead>
@@ -252,9 +279,9 @@ export default function JigListPage() {
                     <TableCell className="font-mono">{record.jigNo}</TableCell>
                     <TableCell>{record.jigName}</TableCell>
                     <TableCell><Badge variant="outline">{record.jigType}</Badge></TableCell>
-                    <TableCell>{record.vehicleType}</TableCell>
-                    <TableCell>{record.acquisitionDate}</TableCell>
-                    <TableCell>{record.inspectionCycle}</TableCell>
+                    <TableCell>{record.processName}</TableCell>
+                    <TableCell>{record.partName}</TableCell>
+                    <TableCell>{record.location}</TableCell>
                     <TableCell>{record.lastInspectionDate || "-"}</TableCell>
                     <TableCell>{record.nextInspectionDate || "-"}</TableCell>
                     <TableCell>

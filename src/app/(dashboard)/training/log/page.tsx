@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, Save, Plus, Trash2, FileText, Users, ClipboardCheck, History, CheckCircle } from "lucide-react";
+import { getActiveTrainingCourses, type TrainingCourse } from "@/lib/master-data";
 
 // Types
 interface Attendee {
@@ -45,10 +46,8 @@ interface TrainingLogForm {
   // Basic Info
   logNumber: string;
   trainingDate: string;
-  trainingName: string;
+  trainingCourseCode: string; // Course code from master data
   trainingTime: string;
-  // Training Type
-  trainingType: "regular" | "special" | "quality-issue";
   // Instructor
   instructorType: "internal" | "external";
   instructorName: string;
@@ -63,9 +62,8 @@ interface TrainingLogForm {
 const initialFormData: TrainingLogForm = {
   logNumber: "LOG-2026-001",
   trainingDate: "",
-  trainingName: "",
+  trainingCourseCode: "",
   trainingTime: "",
-  trainingType: "regular",
   instructorType: "internal",
   instructorName: "",
   instructorDepartment: "",
@@ -96,12 +94,6 @@ const initialHistory: TrainingHistoryEntry[] = [
   { id: "4", date: "2026-06-15", trainingName: "SPC 실무 교육", trainingType: "정기", instructor: "박통계 과장", attendeeCount: 12, status: "scheduled" },
 ];
 
-const trainingTypeLabels: Record<string, string> = {
-  "regular": "정기",
-  "special": "특별",
-  "quality-issue": "품질문제발생시",
-};
-
 const statusLabels: Record<string, string> = {
   "completed": "완료",
   "scheduled": "예정",
@@ -109,11 +101,19 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function TrainingLogPage() {
+  // Get training courses from master data
+  const trainingCourses = useMemo(() => getActiveTrainingCourses(), []);
+
   const [activeTab, setActiveTab] = useState("registration");
   const [formData, setFormData] = useState<TrainingLogForm>(initialFormData);
   const [attendees, setAttendees] = useState<Attendee[]>(initialAttendees);
   const [evaluationItems, setEvaluationItems] = useState<EvaluationItem[]>(initialEvaluationItems);
   const [history] = useState<TrainingHistoryEntry[]>(initialHistory);
+
+  // Get selected course details
+  const selectedCourse = useMemo(() => {
+    return trainingCourses.find((c) => c.code === formData.trainingCourseCode);
+  }, [formData.trainingCourseCode, trainingCourses]);
 
   const handleInputChange = (field: keyof TrainingLogForm, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -242,14 +242,23 @@ export default function TrainingLogPage() {
                     onChange={(e) => handleInputChange("trainingDate", e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="trainingName">교육명</Label>
-                  <Input
-                    id="trainingName"
-                    value={formData.trainingName}
-                    onChange={(e) => handleInputChange("trainingName", e.target.value)}
-                    placeholder="교육명을 입력하세요"
-                  />
+                <div className="space-y-2 col-span-2">
+                  <Label>교육과정</Label>
+                  <Select
+                    value={formData.trainingCourseCode}
+                    onValueChange={(value) => handleInputChange("trainingCourseCode", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="교육과정 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {trainingCourses.map((course) => (
+                        <SelectItem key={course.code} value={course.code}>
+                          {course.name} ({course.type} / {course.category})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="trainingTime">교육시간</Label>
@@ -262,24 +271,22 @@ export default function TrainingLogPage() {
                 </div>
               </div>
 
-              {/* Training Type and Instructor */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label>교육유형</Label>
-                  <Select
-                    value={formData.trainingType}
-                    onValueChange={(value) => handleInputChange("trainingType", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="교육유형 선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="regular">정기</SelectItem>
-                      <SelectItem value="special">특별</SelectItem>
-                      <SelectItem value="quality-issue">품질문제발생시</SelectItem>
-                    </SelectContent>
-                  </Select>
+              {/* Selected course details */}
+              {selectedCourse && (
+                <div className="p-3 bg-muted rounded-md text-sm">
+                  <div className="grid grid-cols-5 gap-2">
+                    <div><span className="text-muted-foreground">유형:</span> {selectedCourse.type}</div>
+                    <div><span className="text-muted-foreground">분류:</span> {selectedCourse.category}</div>
+                    <div><span className="text-muted-foreground">기본시간:</span> {selectedCourse.duration}시간</div>
+                    <div><span className="text-muted-foreground">주기:</span> {selectedCourse.frequency}</div>
+                    <div><span className="text-muted-foreground">필수:</span> {selectedCourse.isRequired ? "예" : "아니오"}</div>
+                  </div>
+                  <div className="mt-2 text-muted-foreground">{selectedCourse.description}</div>
                 </div>
+              )}
+
+              {/* Instructor */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label>강사</Label>
                   <Select

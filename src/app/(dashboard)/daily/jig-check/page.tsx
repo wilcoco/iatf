@@ -10,18 +10,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Ruler, Plus, Save, CheckCircle, XCircle } from "lucide-react";
+import { getJigs, type Jig } from "@/lib/master-data";
 
 interface JigCheck {
   id: number;
   checkDate: string;
-  jigNo: string;
+  jigCode: string;
   jigName: string;
   jigType: string;
+  processName: string;
+  location: string;
   shift: string;
   checkItems: { item: string; result: string }[];
   overallResult: string;
   findings: string;
   actionTaken: string;
+}
+
+interface JigOption {
+  code: string;
+  name: string;
+  type: string;
+  processName: string;
+  location: string;
+  lastInspectionDate: string;
+  nextInspectionDate: string;
+  status: string;
 }
 
 const checkItemsList = [
@@ -36,13 +50,16 @@ const checkItemsList = [
 
 export default function JigCheckPage() {
   const [checks, setChecks] = useState<JigCheck[]>([]);
+  const [jigOptions, setJigOptions] = useState<JigOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     checkDate: new Date().toISOString().split("T")[0],
-    jigNo: "",
+    jigCode: "",
     jigName: "",
     jigType: "",
+    processName: "",
+    location: "",
     shift: "",
     checkItems: checkItemsList.map((item) => ({ item, result: "" })),
     findings: "",
@@ -50,8 +67,35 @@ export default function JigCheckPage() {
   });
 
   useEffect(() => {
+    // Load jigs from master data
+    const masterJigs = getJigs();
+    const options: JigOption[] = masterJigs.map((jig: Jig) => ({
+      code: jig.code,
+      name: jig.name,
+      type: jig.type,
+      processName: jig.processName,
+      location: jig.location,
+      lastInspectionDate: jig.lastInspectionDate,
+      nextInspectionDate: jig.nextInspectionDate,
+      status: jig.status,
+    }));
+    setJigOptions(options);
     setLoading(false);
   }, []);
+
+  const handleJigSelect = (jigCode: string) => {
+    const selectedJig = jigOptions.find(j => j.code === jigCode);
+    if (selectedJig) {
+      setFormData({
+        ...formData,
+        jigCode: selectedJig.code,
+        jigName: selectedJig.name,
+        jigType: selectedJig.type,
+        processName: selectedJig.processName,
+        location: selectedJig.location,
+      });
+    }
+  };
 
   const handleCheckItemChange = (index: number, result: string) => {
     const newCheckItems = [...formData.checkItems];
@@ -65,9 +109,11 @@ export default function JigCheckPage() {
     const newCheck: JigCheck = {
       id: Date.now(),
       checkDate: formData.checkDate,
-      jigNo: formData.jigNo,
+      jigCode: formData.jigCode,
       jigName: formData.jigName,
       jigType: formData.jigType,
+      processName: formData.processName,
+      location: formData.location,
       shift: formData.shift,
       checkItems: formData.checkItems,
       overallResult,
@@ -78,9 +124,11 @@ export default function JigCheckPage() {
     setShowForm(false);
     setFormData({
       checkDate: new Date().toISOString().split("T")[0],
-      jigNo: "",
+      jigCode: "",
       jigName: "",
       jigType: "",
+      processName: "",
+      location: "",
       shift: "",
       checkItems: checkItemsList.map((item) => ({ item, result: "" })),
       findings: "",
@@ -109,7 +157,7 @@ export default function JigCheckPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-5">
+              <div className="grid gap-4 md:grid-cols-4">
                 <div className="space-y-2">
                   <Label>점검일자</Label>
                   <Input
@@ -120,34 +168,51 @@ export default function JigCheckPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>지그번호</Label>
-                  <Input
-                    value={formData.jigNo}
-                    onChange={(e) => setFormData({ ...formData, jigNo: e.target.value })}
-                    placeholder="J-001"
-                    required
-                  />
+                  <Label>지그 선택</Label>
+                  <Select value={formData.jigCode} onValueChange={handleJigSelect}>
+                    <SelectTrigger><SelectValue placeholder="지그 선택" /></SelectTrigger>
+                    <SelectContent>
+                      {jigOptions.map((jig) => (
+                        <SelectItem key={jig.code} value={jig.code}>
+                          {jig.code} - {jig.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>지그명</Label>
                   <Input
                     value={formData.jigName}
-                    onChange={(e) => setFormData({ ...formData, jigName: e.target.value })}
-                    placeholder="지그명 입력"
-                    required
+                    disabled
+                    placeholder="지그 선택 시 자동 입력"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>유형</Label>
-                  <Select value={formData.jigType} onValueChange={(v) => setFormData({ ...formData, jigType: v })}>
-                    <SelectTrigger><SelectValue placeholder="선택" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="조립">조립지그</SelectItem>
-                      <SelectItem value="도장">도장지그</SelectItem>
-                      <SelectItem value="검사">검사지그</SelectItem>
-                      <SelectItem value="용접">용접지그</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={formData.jigType}
+                    disabled
+                    placeholder="지그 선택 시 자동 입력"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="space-y-2">
+                  <Label>공정명</Label>
+                  <Input
+                    value={formData.processName}
+                    disabled
+                    placeholder="지그 선택 시 자동 입력"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>위치</Label>
+                  <Input
+                    value={formData.location}
+                    disabled
+                    placeholder="지그 선택 시 자동 입력"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>조/교대</Label>
@@ -239,9 +304,11 @@ export default function JigCheckPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>점검일자</TableHead>
-                  <TableHead>지그번호</TableHead>
+                  <TableHead>지그코드</TableHead>
                   <TableHead>지그명</TableHead>
                   <TableHead>유형</TableHead>
+                  <TableHead>공정명</TableHead>
+                  <TableHead>위치</TableHead>
                   <TableHead>조</TableHead>
                   <TableHead>판정</TableHead>
                   <TableHead>발견사항</TableHead>
@@ -251,9 +318,11 @@ export default function JigCheckPage() {
                 {checks.map((check) => (
                   <TableRow key={check.id}>
                     <TableCell>{check.checkDate}</TableCell>
-                    <TableCell className="font-mono">{check.jigNo}</TableCell>
+                    <TableCell className="font-mono">{check.jigCode}</TableCell>
                     <TableCell>{check.jigName}</TableCell>
                     <TableCell>{check.jigType}</TableCell>
+                    <TableCell>{check.processName}</TableCell>
+                    <TableCell>{check.location}</TableCell>
                     <TableCell>{check.shift}</TableCell>
                     <TableCell>
                       <Badge variant={check.overallResult === "정상" ? "success" : "destructive"}>

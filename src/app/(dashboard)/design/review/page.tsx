@@ -11,13 +11,16 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Save, FileText, History, ClipboardList, CheckCircle, Calendar, Trash2 } from "lucide-react";
+import { getVehicleModels, getActiveVehicleModels, getVehicleModelsByCustomer, type VehicleModel } from "@/lib/master-data";
+import { getCustomers, type Customer } from "@/lib/master-data";
 
 // ==================== Types ====================
 interface ReviewPlan {
   reviewNo: string;
   reviewDate: string;
   projectName: string;
-  customerName: string;
+  customerCode: string;
+  vehicleModelCode: string;
   reviewPhase: string;
   participants: string;
 }
@@ -132,12 +135,17 @@ const getInitialReviewItems = (): ReviewItem[] => {
 export default function DesignReviewPage() {
   const [activeTab, setActiveTab] = useState("plan");
 
+  // Master data
+  const customers = getCustomers();
+  const [vehicleModels, setVehicleModels] = useState<VehicleModel[]>(getActiveVehicleModels());
+
   // Tab 1: Review Plan State
   const [reviewPlan, setReviewPlan] = useState<ReviewPlan>({
     reviewNo: "",
     reviewDate: "",
     projectName: "",
-    customerName: "",
+    customerCode: "",
+    vehicleModelCode: "",
     reviewPhase: "",
     participants: "",
   });
@@ -236,6 +244,10 @@ export default function DesignReviewPage() {
   // ==================== Handlers ====================
   const handlePlanChange = (field: keyof ReviewPlan, value: string) => {
     setReviewPlan({ ...reviewPlan, [field]: value });
+    if (field === "customerCode") {
+      setReviewPlan((prev) => ({ ...prev, customerCode: value, vehicleModelCode: "" }));
+      setVehicleModels(value ? getVehicleModelsByCustomer(value) : getActiveVehicleModels());
+    }
   };
 
   const handleReviewItemChange = (id: string, field: keyof ReviewItem, value: string) => {
@@ -394,11 +406,39 @@ export default function DesignReviewPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>고객사 *</Label>
-                  <Input
-                    value={reviewPlan.customerName}
-                    onChange={(e) => handlePlanChange("customerName", e.target.value)}
-                    placeholder="고객사명 입력"
-                  />
+                  <Select
+                    value={reviewPlan.customerCode}
+                    onValueChange={(value) => handlePlanChange("customerCode", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="고객사 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers.map((customer) => (
+                        <SelectItem key={customer.code} value={customer.code}>
+                          {customer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>차종</Label>
+                  <Select
+                    value={reviewPlan.vehicleModelCode}
+                    onValueChange={(value) => handlePlanChange("vehicleModelCode", value)}
+                  >
+                    <SelectTrigger className={!reviewPlan.customerCode ? "opacity-50" : ""}>
+                      <SelectValue placeholder={reviewPlan.customerCode ? "차종 선택" : "고객사를 먼저 선택하세요"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vehicleModels.map((model) => (
+                        <SelectItem key={model.code} value={model.code}>
+                          {model.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>검토단계 *</Label>
@@ -452,7 +492,19 @@ export default function DesignReviewPage() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">고객사</p>
-                    <p className="font-medium">{reviewPlan.customerName || "-"}</p>
+                    <p className="font-medium">
+                      {reviewPlan.customerCode
+                        ? customers.find((c) => c.code === reviewPlan.customerCode)?.name || "-"
+                        : "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">차종</p>
+                    <p className="font-medium">
+                      {reviewPlan.vehicleModelCode
+                        ? vehicleModels.find((m) => m.code === reviewPlan.vehicleModelCode)?.name || "-"
+                        : "-"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">참석자</p>

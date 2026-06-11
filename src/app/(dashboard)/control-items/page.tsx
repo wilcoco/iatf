@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ClipboardList, Search } from "lucide-react";
 import Link from "next/link";
+import { getCommonCodesByGroup, type CommonCode } from "@/lib/master-data";
 
 interface ControlItem {
   id: number;
@@ -60,7 +61,7 @@ export default function ControlItemsPage() {
     return matchesSearch && matchesFrequency;
   });
 
-  const frequencies = ["일", "주", "월", "반기", "년", "발생시"];
+  const frequencies = getCommonCodesByGroup("FREQ");
 
   return (
     <div className="space-y-6">
@@ -89,12 +90,12 @@ export default function ControlItemsPage() {
           </Badge>
           {frequencies.map((freq) => (
             <Badge
-              key={freq}
-              variant={frequencyFilter === freq ? "default" : "outline"}
+              key={freq.code}
+              variant={frequencyFilter === freq.name ? "default" : "outline"}
               className="cursor-pointer"
-              onClick={() => setFrequencyFilter(freq)}
+              onClick={() => setFrequencyFilter(freq.name)}
             >
-              {freq}
+              {freq.name}
             </Badge>
           ))}
         </div>

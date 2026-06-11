@@ -24,6 +24,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { FileText, CheckSquare, ClipboardCheck, History, Save, Plus } from "lucide-react";
+import { getVehicleModels, getActiveVehicleModels, getVehicleModelsByCustomer, type VehicleModel } from "@/lib/master-data";
+import { getCustomers, type Customer } from "@/lib/master-data";
 
 // PPAP 18 Elements based on IATF 16949
 const ppapElements = [
@@ -62,7 +64,8 @@ interface PPAPFormData {
   // Basic Info
   ppapNumber: string;
   submissionDate: string;
-  customer: string;
+  customerCode: string;
+  vehicleModelCode: string;
   partNumber: string;
   partName: string;
   submissionReason: "new" | "change" | "reapproval" | "";
@@ -102,7 +105,8 @@ interface HistoryRecord {
 const initialFormData: PPAPFormData = {
   ppapNumber: "",
   submissionDate: new Date().toISOString().split("T")[0],
-  customer: "",
+  customerCode: "",
+  vehicleModelCode: "",
   partNumber: "",
   partName: "",
   submissionReason: "",
@@ -158,6 +162,12 @@ export default function PPAPPage() {
   const [formData, setFormData] = useState<PPAPFormData>(initialFormData);
   const [checklist, setChecklist] = useState<ChecklistItem[]>(initialChecklist);
   const [history] = useState<HistoryRecord[]>(sampleHistory);
+
+  // Master data
+  const customers = getCustomers();
+  const vehicleModels = formData.customerCode
+    ? getVehicleModelsByCustomer(formData.customerCode)
+    : getActiveVehicleModels();
 
   const updateField = <K extends keyof PPAPFormData>(
     field: K,
@@ -372,15 +382,46 @@ export default function PPAPPage() {
 
               <div className="border-t pt-4">
                 <h3 className="text-lg font-semibold mb-4">고객/품목 정보</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="customer">고객사</Label>
-                    <Input
-                      id="customer"
-                      value={formData.customer}
-                      onChange={(e) => updateField("customer", e.target.value)}
-                      placeholder="고객사명 입력"
-                    />
+                    <Label>고객사</Label>
+                    <Select
+                      value={formData.customerCode}
+                      onValueChange={(value) => {
+                        updateField("customerCode", value);
+                        updateField("vehicleModelCode", "");
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="고객사 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customers.map((customer) => (
+                          <SelectItem key={customer.code} value={customer.code}>
+                            {customer.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>차종</Label>
+                    <Select
+                      value={formData.vehicleModelCode}
+                      onValueChange={(value) => updateField("vehicleModelCode", value)}
+                    >
+                      <SelectTrigger className={!formData.customerCode ? "opacity-50" : ""}>
+                        <SelectValue placeholder={formData.customerCode ? "차종 선택" : "고객사를 먼저 선택하세요"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {vehicleModels.map((model) => (
+                          <SelectItem key={model.code} value={model.code}>
+                            {model.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">

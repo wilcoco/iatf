@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClipboardList, Search, Save } from "lucide-react";
+import { getActiveDefectTypes } from "@/lib/master-data";
 
 interface CAPAFormData {
   // Header

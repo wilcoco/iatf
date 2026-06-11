@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import {
   Truck,
   BarChart3,
 } from "lucide-react";
+import { getInspectionItemsByType, type InspectionItem } from "@/lib/master-data";
 
 // Types
 interface InspectionCheckItem {
@@ -76,6 +77,9 @@ function generateInspectionNo(): string {
 export default function FinalInspectionPage() {
   const [activeTab, setActiveTab] = useState("registration");
 
+  // Get final inspection items from master data
+  const finalInspectionItems = useMemo(() => getInspectionItemsByType("출하검사"), []);
+
   // Tab 1: Final inspection registration state
   const [formData, setFormData] = useState({
     inspectionNo: generateInspectionNo(),
@@ -90,12 +94,18 @@ export default function FinalInspectionPage() {
     remarks: "",
   });
 
-  const [checkItems, setCheckItems] = useState<InspectionCheckItem[]>([
-    { id: 1, category: "외관", itemName: "외관 육안 검사", result: "", remarks: "" },
-    { id: 2, category: "치수", itemName: "주요 치수 검사", result: "", remarks: "" },
-    { id: 3, category: "기능", itemName: "기능 테스트", result: "", remarks: "" },
-    { id: 4, category: "포장", itemName: "포장 상태 확인", result: "", remarks: "" },
-  ]);
+  // Initialize check items from master data
+  const [checkItems, setCheckItems] = useState<InspectionCheckItem[]>(() => {
+    return finalInspectionItems.map((item) => ({
+      id: item.id,
+      category: item.category as "외관" | "치수" | "기능" | "포장",
+      itemName: `${item.name} (${item.spec})`,
+      result: "" as "합격" | "불합격" | "",
+      remarks: item.lsl !== null && item.usl !== null
+        ? `LSL: ${item.lsl}, USL: ${item.usl} ${item.unit}`
+        : "",
+    }));
+  });
 
   const [overallResult, setOverallResult] = useState<"합격" | "불합격" | "재검사" | "">("");
   const [inspectionHistory, setInspectionHistory] = useState<FinalInspectionRecord[]>([]);
@@ -187,12 +197,17 @@ export default function FinalInspectionPage() {
       approver: "",
       remarks: "",
     });
-    setCheckItems([
-      { id: 1, category: "외관", itemName: "외관 육안 검사", result: "", remarks: "" },
-      { id: 2, category: "치수", itemName: "주요 치수 검사", result: "", remarks: "" },
-      { id: 3, category: "기능", itemName: "기능 테스트", result: "", remarks: "" },
-      { id: 4, category: "포장", itemName: "포장 상태 확인", result: "", remarks: "" },
-    ]);
+    setCheckItems(
+      finalInspectionItems.map((item) => ({
+        id: item.id,
+        category: item.category as "외관" | "치수" | "기능" | "포장",
+        itemName: `${item.name} (${item.spec})`,
+        result: "" as "합격" | "불합격" | "",
+        remarks: item.lsl !== null && item.usl !== null
+          ? `LSL: ${item.lsl}, USL: ${item.usl} ${item.unit}`
+          : "",
+      }))
+    );
     setOverallResult("");
 
     alert("최종검사 기록이 저장되었습니다.");
