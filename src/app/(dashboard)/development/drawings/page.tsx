@@ -11,13 +11,22 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Save, FileText, Users, History, List, Search, Trash2 } from "lucide-react";
+import {
+  getActiveDrawings,
+  getDrawingRevisionHistory,
+  getActiveParts,
+  getCustomers,
+  type Drawing as MasterDrawing,
+} from "@/lib/master-data";
 
 // ==================== Types ====================
-interface Drawing {
+interface LocalDrawing {
   id: string;
   drawingNo: string;       // 도면번호
   partNo: string;          // 품번
   partName: string;        // 품명
+  customerCode: string;    // 고객사 코드
+  customerName: string;    // 고객사명
   revisionNo: string;      // 개정번호
   revisionDate: string;    // 개정일
   revisionContent: string; // 개정내용
@@ -51,33 +60,26 @@ interface RevisionHistory {
   previousRevision: string;
 }
 
-// ==================== Initial Data ====================
-const initialDrawings: Drawing[] = [
-  {
-    id: "drw-1",
-    drawingNo: "DWG-2024-001",
-    partNo: "PN-001",
-    partName: "메인 하우징",
-    revisionNo: "A",
-    revisionDate: "2024-01-15",
-    revisionContent: "초도 작성",
-    distributor: "A 협력사",
+// ==================== Helper function to convert master data to local format ====================
+function convertMasterDrawingsToLocal(masterDrawings: MasterDrawing[]): LocalDrawing[] {
+  return masterDrawings.map((d) => ({
+    id: `drw-${d.id}`,
+    drawingNo: d.code,
+    partNo: d.partCode,
+    partName: d.partName,
+    customerCode: d.customerCode,
+    customerName: d.customerName,
+    revisionNo: d.revisionNo,
+    revisionDate: d.revisionDate,
+    revisionContent: d.revisionContent,
+    distributor: "",
     retrievalDate: "",
-    createdAt: "2024-01-15",
-  },
-  {
-    id: "drw-2",
-    drawingNo: "DWG-2024-002",
-    partNo: "PN-002",
-    partName: "커버 어셈블리",
-    revisionNo: "B",
-    revisionDate: "2024-02-20",
-    revisionContent: "치수 변경",
-    distributor: "B 협력사",
-    retrievalDate: "2024-03-01",
-    createdAt: "2024-01-20",
-  },
-];
+    createdAt: d.approvalDate,
+  }));
+}
+
+// ==================== Initial Data from master-data.ts ====================
+const initialDrawings: LocalDrawing[] = convertMasterDrawingsToLocal(getActiveDrawings());
 
 const initialDistributions: Distribution[] = [
   {
@@ -112,8 +114,12 @@ const initialRevisions: RevisionHistory[] = [
 export default function DrawingManagementPage() {
   const [activeTab, setActiveTab] = useState("registration");
 
+  // Master data
+  const activeParts = getActiveParts();
+  const customersList = getCustomers();
+
   // State
-  const [drawings, setDrawings] = useState<Drawing[]>(initialDrawings);
+  const [drawings, setDrawings] = useState<LocalDrawing[]>(initialDrawings);
   const [distributions, setDistributions] = useState<Distribution[]>(initialDistributions);
   const [revisions, setRevisions] = useState<RevisionHistory[]>(initialRevisions);
 
@@ -126,11 +132,16 @@ export default function DrawingManagementPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPartNo, setFilterPartNo] = useState("");
 
+  // State for revision history lookup
+  const [selectedDrawingCodeForHistory, setSelectedDrawingCodeForHistory] = useState<string>("");
+
   // Form Data States
-  const [drawingFormData, setDrawingFormData] = useState<Omit<Drawing, "id" | "createdAt">>({
+  const [drawingFormData, setDrawingFormData] = useState<Omit<LocalDrawing, "id" | "createdAt">>({
     drawingNo: "",
     partNo: "",
     partName: "",
+    customerCode: "",
+    customerName: "",
     revisionNo: "",
     revisionDate: new Date().toISOString().split("T")[0],
     revisionContent: "",
@@ -174,10 +185,34 @@ export default function DrawingManagementPage() {
     pending: "warning",
   };
 
+  // ==================== Part Selection Handler ====================
+  const handlePartSelect = (partCode: string) => {
+    const part = activeParts.find((p) => p.code === partCode);
+    if (part) {
+      setDrawingFormData({
+        ...drawingFormData,
+        partNo: part.code,
+        partName: part.name,
+      });
+    }
+  };
+
+  // ==================== Customer Selection Handler ====================
+  const handleCustomerSelect = (customerCode: string) => {
+    const customer = customersList.find((c) => c.code === customerCode);
+    if (customer) {
+      setDrawingFormData({
+        ...drawingFormData,
+        customerCode: customer.code,
+        customerName: customer.name,
+      });
+    }
+  };
+
   // ==================== Handlers ====================
   const handleAddDrawing = (e: React.FormEvent) => {
     e.preventDefault();
-    const newDrawing: Drawing = {
+    const newDrawing: LocalDrawing = {
       id: `drw-${Date.now()}`,
       ...drawingFormData,
       createdAt: new Date().toISOString().split("T")[0],
@@ -188,6 +223,8 @@ export default function DrawingManagementPage() {
       drawingNo: "",
       partNo: "",
       partName: "",
+      customerCode: "",
+      customerName: "",
       revisionNo: "",
       revisionDate: new Date().toISOString().split("T")[0],
       revisionContent: "",
@@ -349,24 +386,28 @@ export default function DrawingManagementPage() {
                         </div>
                         <div className="space-y-2">
                           <Label>품번 *</Label>
-                          <Input
+                          <Select
                             value={drawingFormData.partNo}
-                            onChange={(e) =>
-                              setDrawingFormData({ ...drawingFormData, partNo: e.target.value })
-                            }
-                            placeholder="PN-001"
-                            required
-                          />
+                            onValueChange={handlePartSelect}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="품번 선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {activeParts.map((part) => (
+                                <SelectItem key={part.code} value={part.code}>
+                                  {part.code} - {part.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label>품명 *</Label>
+                          <Label>품명</Label>
                           <Input
                             value={drawingFormData.partName}
-                            onChange={(e) =>
-                              setDrawingFormData({ ...drawingFormData, partName: e.target.value })
-                            }
-                            placeholder="부품명"
-                            required
+                            disabled
+                            placeholder="품번 선택 시 자동입력"
                           />
                         </div>
                         <div className="space-y-2">
@@ -383,6 +424,24 @@ export default function DrawingManagementPage() {
                       </div>
 
                       <div className="grid gap-4 md:grid-cols-4">
+                        <div className="space-y-2">
+                          <Label>고객사 *</Label>
+                          <Select
+                            value={drawingFormData.customerCode}
+                            onValueChange={handleCustomerSelect}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="고객사 선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {customersList.map((customer) => (
+                                <SelectItem key={customer.code} value={customer.code}>
+                                  {customer.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <div className="space-y-2">
                           <Label>개정일 *</Label>
                           <Input
@@ -709,6 +768,89 @@ export default function DrawingManagementPage() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Drawing Selection for Revision History Lookup */}
+              <div className="flex gap-4 items-end">
+                <div className="w-80">
+                  <Label>도면번호로 개정 이력 조회</Label>
+                  <Select
+                    value={selectedDrawingCodeForHistory}
+                    onValueChange={setSelectedDrawingCodeForHistory}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="도면 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">전체 보기</SelectItem>
+                      {/* Get unique drawing codes */}
+                      {Array.from(new Set(drawings.map(d => d.drawingNo))).map((drawingNo) => {
+                        const drawing = drawings.find(d => d.drawingNo === drawingNo);
+                        return (
+                          <SelectItem key={drawingNo} value={drawingNo}>
+                            {drawingNo} - {drawing?.partName}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {selectedDrawingCodeForHistory && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedDrawingCodeForHistory("")}
+                  >
+                    초기화
+                  </Button>
+                )}
+              </div>
+
+              {/* Master Data Revision History */}
+              {selectedDrawingCodeForHistory && (
+                <Card className="bg-muted/50">
+                  <CardHeader>
+                    <CardTitle className="text-lg">마스터 데이터 개정 이력: {selectedDrawingCodeForHistory}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>도면번호</TableHead>
+                          <TableHead>품명</TableHead>
+                          <TableHead>개정번호</TableHead>
+                          <TableHead>개정일</TableHead>
+                          <TableHead>개정내용</TableHead>
+                          <TableHead>승인자</TableHead>
+                          <TableHead>상태</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {getDrawingRevisionHistory(selectedDrawingCodeForHistory).map((rev) => (
+                          <TableRow key={`${rev.code}-${rev.revisionNo}`}>
+                            <TableCell className="font-mono">{rev.code}</TableCell>
+                            <TableCell>{rev.partName}</TableCell>
+                            <TableCell>
+                              <Badge variant={rev.status === "최신" ? "default" : "outline"}>{rev.revisionNo}</Badge>
+                            </TableCell>
+                            <TableCell>{rev.revisionDate}</TableCell>
+                            <TableCell className="max-w-xs truncate">{rev.revisionContent}</TableCell>
+                            <TableCell>{rev.approver}</TableCell>
+                            <TableCell>
+                              <Badge variant={rev.status === "최신" ? "default" : "secondary"}>{rev.status}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {getDrawingRevisionHistory(selectedDrawingCodeForHistory).length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center text-muted-foreground py-4">
+                              해당 도면의 마스터 데이터 개정 이력이 없습니다.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+
               {showRevisionForm && (
                 <Card className="border-dashed">
                   <CardHeader>

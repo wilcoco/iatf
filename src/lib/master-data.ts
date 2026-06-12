@@ -512,3 +512,43 @@ export function getActiveJigs() { return jigs.filter(j => j.status === "사용�
 export function getProductionLines() {
   return [...new Set(equipments.map(e => e.line))];
 }
+
+// ============ 도면 데이터 ============
+export interface Drawing {
+  id: number;
+  code: string;           // 도면번호
+  partCode: string;       // 품번 연결
+  partName: string;       // 품명
+  customerCode: string;   // 고객사 코드
+  customerName: string;   // 고객사명
+  revisionNo: string;     // 개정번호 A, B, C...
+  revisionDate: string;   // 개정일
+  revisionContent: string; // 개정내용
+  fileType: "2D CAD" | "3D CAD" | "PDF" | "기타";
+  filePath: string;       // 파일경로
+  status: "최신" | "구버전" | "폐기";
+  approver: string;       // 승인자
+  approvalDate: string;   // 승인일
+  isActive: boolean;
+}
+
+export const drawings: Drawing[] = [
+  { id: 1, code: "DWG-001", partCode: "P-001", partName: "범퍼 커버 FR", customerCode: "CUS-001", customerName: "현대자동차", revisionNo: "C", revisionDate: "2025-03-15", revisionContent: "도장 사양 변경", fileType: "2D CAD", filePath: "/drawings/DWG-001-C.dwg", status: "최신", approver: "박품질", approvalDate: "2025-03-16", isActive: true },
+  { id: 2, code: "DWG-002", partCode: "P-002", partName: "범퍼 커버 RR", customerCode: "CUS-001", customerName: "현대자동차", revisionNo: "B", revisionDate: "2025-02-20", revisionContent: "체결부 치수 변경", fileType: "2D CAD", filePath: "/drawings/DWG-002-B.dwg", status: "최신", approver: "박품질", approvalDate: "2025-02-21", isActive: true },
+  { id: 3, code: "DWG-003", partCode: "P-003", partName: "라디에이터 그릴", customerCode: "CUS-002", customerName: "기아자동차", revisionNo: "A", revisionDate: "2024-11-10", revisionContent: "초도 작성", fileType: "3D CAD", filePath: "/drawings/DWG-003-A.stp", status: "최신", approver: "정기술", approvalDate: "2024-11-11", isActive: true },
+  { id: 4, code: "DWG-004", partCode: "P-004", partName: "사이드 미러 커버 LH", customerCode: "CUS-001", customerName: "현대자동차", revisionNo: "D", revisionDate: "2025-04-05", revisionContent: "외형 R값 변경", fileType: "2D CAD", filePath: "/drawings/DWG-004-D.dwg", status: "최신", approver: "정기술", approvalDate: "2025-04-06", isActive: true },
+  { id: 5, code: "DWG-005", partCode: "P-005", partName: "사이드 미러 커버 RH", customerCode: "CUS-001", customerName: "현대자동차", revisionNo: "D", revisionDate: "2025-04-05", revisionContent: "외형 R값 변경 (LH 대칭)", fileType: "2D CAD", filePath: "/drawings/DWG-005-D.dwg", status: "최신", approver: "정기술", approvalDate: "2025-04-06", isActive: true },
+  { id: 6, code: "DWG-006", partCode: "P-006", partName: "도어 핸들 FR LH", customerCode: "CUS-002", customerName: "기아자동차", revisionNo: "B", revisionDate: "2025-01-18", revisionContent: "도금 두께 규격 변경", fileType: "2D CAD", filePath: "/drawings/DWG-006-B.dwg", status: "최신", approver: "박품질", approvalDate: "2025-01-19", isActive: true },
+  { id: 7, code: "DWG-007", partCode: "P-007", partName: "도어 핸들 FR RH", customerCode: "CUS-002", customerName: "기아자동차", revisionNo: "B", revisionDate: "2025-01-18", revisionContent: "도금 두께 규격 변경 (LH 대칭)", fileType: "2D CAD", filePath: "/drawings/DWG-007-B.dwg", status: "최신", approver: "박품질", approvalDate: "2025-01-19", isActive: true },
+  { id: 8, code: "DWG-008", partCode: "P-008", partName: "센터페시아 어셈블리", customerCode: "CUS-001", customerName: "현대자동차", revisionNo: "A", revisionDate: "2024-09-20", revisionContent: "초도 작성", fileType: "3D CAD", filePath: "/drawings/DWG-008-A.stp", status: "최신", approver: "정기술", approvalDate: "2024-09-21", isActive: true },
+  // 구버전 도면
+  { id: 9, code: "DWG-001", partCode: "P-001", partName: "범퍼 커버 FR", customerCode: "CUS-001", customerName: "현대자동차", revisionNo: "B", revisionDate: "2024-12-10", revisionContent: "체결부 강도 보강", fileType: "2D CAD", filePath: "/drawings/DWG-001-B.dwg", status: "구버전", approver: "박품질", approvalDate: "2024-12-11", isActive: false },
+  { id: 10, code: "DWG-001", partCode: "P-001", partName: "범퍼 커버 FR", customerCode: "CUS-001", customerName: "현대자동차", revisionNo: "A", revisionDate: "2024-06-15", revisionContent: "초도 작성", fileType: "2D CAD", filePath: "/drawings/DWG-001-A.dwg", status: "구버전", approver: "정기술", approvalDate: "2024-06-16", isActive: false },
+];
+
+export function getDrawings() { return drawings; }
+export function getDrawingByCode(code: string) { return drawings.find(d => d.code === code && d.status === "최신"); }
+export function getActiveDrawings() { return drawings.filter(d => d.isActive && d.status === "최신"); }
+export function getDrawingsByPart(partCode: string) { return drawings.filter(d => d.partCode === partCode); }
+export function getLatestDrawingByPart(partCode: string) { return drawings.find(d => d.partCode === partCode && d.status === "최신"); }
+export function getDrawingRevisionHistory(code: string) { return drawings.filter(d => d.code === code).sort((a, b) => b.revisionNo.localeCompare(a.revisionNo)); }

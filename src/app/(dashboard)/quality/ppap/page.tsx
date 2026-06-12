@@ -23,30 +23,32 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileText, CheckSquare, ClipboardCheck, History, Save, Plus } from "lucide-react";
+import { FileText, CheckSquare, ClipboardCheck, History, Save, Plus, FileImage } from "lucide-react";
 import { getVehicleModels, getActiveVehicleModels, getVehicleModelsByCustomer, type VehicleModel } from "@/lib/master-data";
 import { getCustomers, type Customer } from "@/lib/master-data";
+import { getActiveDrawings, getLatestDrawingByPart, type Drawing } from "@/lib/master-data";
 
 // PPAP 18 Elements based on IATF 16949
+// Note: Element 1 (설계기록) includes drawings (도면) as a key component
 const ppapElements = [
-  { id: 1, name: "설계기록 (Design Records)", category: "design" },
-  { id: 2, name: "승인된 기술변경문서 (Engineering Change Documents)", category: "design" },
-  { id: 3, name: "고객 기술승인 (Customer Engineering Approval)", category: "design" },
-  { id: 4, name: "설계 FMEA (Design FMEA)", category: "design" },
-  { id: 5, name: "공정흐름도 (Process Flow Diagram)", category: "process" },
-  { id: 6, name: "공정 FMEA (Process FMEA)", category: "process" },
-  { id: 7, name: "관리계획서 (Control Plan)", category: "process" },
-  { id: 8, name: "측정시스템분석 (MSA)", category: "measurement" },
-  { id: 9, name: "치수성적서 (Dimensional Results)", category: "measurement" },
-  { id: 10, name: "재료/성능시험 (Material/Performance Test)", category: "test" },
-  { id: 11, name: "초기공정연구 (Initial Process Study - Ppk)", category: "capability" },
-  { id: 12, name: "적격 실험실 문서 (Qualified Laboratory Documentation)", category: "documentation" },
-  { id: 13, name: "외관승인보고서 (AAR - Appearance Approval Report)", category: "appearance" },
-  { id: 14, name: "표본제품 (Sample Production Parts)", category: "sample" },
-  { id: 15, name: "마스터샘플 (Master Sample)", category: "sample" },
-  { id: 16, name: "검사보조구 (Checking Aids)", category: "inspection" },
-  { id: 17, name: "고객특정요구사항 (Customer Specific Requirements)", category: "customer" },
-  { id: 18, name: "부품제출보증서 (PSW - Part Submission Warrant)", category: "psw" },
+  { id: 1, name: "설계기록/도면 (Design Records/Drawing)", category: "design", requiresDrawing: true },
+  { id: 2, name: "승인된 기술변경문서 (Engineering Change Documents)", category: "design", requiresDrawing: false },
+  { id: 3, name: "고객 기술승인 (Customer Engineering Approval)", category: "design", requiresDrawing: false },
+  { id: 4, name: "설계 FMEA (Design FMEA)", category: "design", requiresDrawing: false },
+  { id: 5, name: "공정흐름도 (Process Flow Diagram)", category: "process", requiresDrawing: false },
+  { id: 6, name: "공정 FMEA (Process FMEA)", category: "process", requiresDrawing: false },
+  { id: 7, name: "관리계획서 (Control Plan)", category: "process", requiresDrawing: false },
+  { id: 8, name: "측정시스템분석 (MSA)", category: "measurement", requiresDrawing: false },
+  { id: 9, name: "치수성적서 (Dimensional Results)", category: "measurement", requiresDrawing: true },
+  { id: 10, name: "재료/성능시험 (Material/Performance Test)", category: "test", requiresDrawing: false },
+  { id: 11, name: "초기공정연구 (Initial Process Study - Ppk)", category: "capability", requiresDrawing: false },
+  { id: 12, name: "적격 실험실 문서 (Qualified Laboratory Documentation)", category: "documentation", requiresDrawing: false },
+  { id: 13, name: "외관승인보고서 (AAR - Appearance Approval Report)", category: "appearance", requiresDrawing: false },
+  { id: 14, name: "표본제품 (Sample Production Parts)", category: "sample", requiresDrawing: false },
+  { id: 15, name: "마스터샘플 (Master Sample)", category: "sample", requiresDrawing: false },
+  { id: 16, name: "검사보조구 (Checking Aids)", category: "inspection", requiresDrawing: false },
+  { id: 17, name: "고객특정요구사항 (Customer Specific Requirements)", category: "customer", requiresDrawing: false },
+  { id: 18, name: "부품제출보증서 (PSW - Part Submission Warrant)", category: "psw", requiresDrawing: false },
 ];
 
 // Submission Level Requirements based on IATF 16949
@@ -162,18 +164,34 @@ export default function PPAPPage() {
   const [formData, setFormData] = useState<PPAPFormData>(initialFormData);
   const [checklist, setChecklist] = useState<ChecklistItem[]>(initialChecklist);
   const [history] = useState<HistoryRecord[]>(sampleHistory);
+  const [selectedDrawing, setSelectedDrawing] = useState<Drawing | null>(null);
 
   // Master data
   const customers = getCustomers();
   const vehicleModels = formData.customerCode
     ? getVehicleModelsByCustomer(formData.customerCode)
     : getActiveVehicleModels();
+  const activeDrawings = getActiveDrawings();
 
   const updateField = <K extends keyof PPAPFormData>(
     field: K,
     value: PPAPFormData[K]
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+
+    // When part number changes, try to find related drawing
+    if (field === "partNumber" && typeof value === "string") {
+      const drawing = getLatestDrawingByPart(value);
+      setSelectedDrawing(drawing || null);
+      // Auto-populate PSW drawing fields if drawing found
+      if (drawing) {
+        setFormData((prev) => ({
+          ...prev,
+          pswDrawingNumber: drawing.code,
+          pswDrawingDate: drawing.revisionDate,
+        }));
+      }
+    }
   };
 
   const updateChecklistItem = (
@@ -224,6 +242,19 @@ export default function PPAPPage() {
         return <Badge variant="destructive">반려</Badge>;
       default:
         return <Badge variant="outline">미결정</Badge>;
+    }
+  };
+
+  const getDrawingStatusBadge = (status: Drawing["status"]) => {
+    switch (status) {
+      case "최신":
+        return <Badge variant="success">최신</Badge>;
+      case "구버전":
+        return <Badge variant="warning">구버전</Badge>;
+      case "폐기":
+        return <Badge variant="destructive">폐기</Badge>;
+      default:
+        return <Badge variant="outline">-</Badge>;
     }
   };
 
@@ -446,6 +477,61 @@ export default function PPAPPage() {
                 </div>
               </div>
 
+              {/* Drawing Information Section */}
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <FileImage className="h-5 w-5" />
+                  도면 정보
+                </h3>
+                {selectedDrawing ? (
+                  <Card className="bg-blue-50 border-blue-200">
+                    <CardContent className="pt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                          <Label className="text-muted-foreground text-xs">도면번호</Label>
+                          <p className="font-medium">{selectedDrawing.code}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground text-xs">현재 개정번호</Label>
+                          <p className="font-medium">Rev. {selectedDrawing.revisionNo}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground text-xs">개정일</Label>
+                          <p className="font-medium">{selectedDrawing.revisionDate}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground text-xs">승인상태</Label>
+                          <div className="flex items-center gap-2">
+                            {getDrawingStatusBadge(selectedDrawing.status)}
+                            {selectedDrawing.approvalDate && (
+                              <span className="text-sm text-muted-foreground">
+                                ({selectedDrawing.approvalDate} 승인)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t">
+                        <div>
+                          <Label className="text-muted-foreground text-xs">개정내용</Label>
+                          <p className="text-sm">{selectedDrawing.revisionContent}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground text-xs">파일형식</Label>
+                          <p className="text-sm">{selectedDrawing.fileType}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground bg-muted/50 rounded-lg">
+                    {formData.partNumber
+                      ? "해당 품번에 연결된 도면이 없습니다."
+                      : "품번을 입력하면 연관 도면 정보가 표시됩니다."}
+                  </div>
+                )}
+              </div>
+
               <div className="border-t pt-4">
                 <h3 className="text-lg font-semibold mb-4">담당자 정보</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -541,6 +627,7 @@ export default function PPAPPage() {
                       <TableHead className="w-12">No.</TableHead>
                       <TableHead className="w-12">필수</TableHead>
                       <TableHead>PPAP 요소</TableHead>
+                      <TableHead className="w-40">도면 참조</TableHead>
                       <TableHead className="w-32">상태</TableHead>
                       <TableHead className="w-48">첨부파일</TableHead>
                       <TableHead>비고</TableHead>
@@ -569,6 +656,20 @@ export default function PPAPPage() {
                             )}
                           </TableCell>
                           <TableCell>{element.name}</TableCell>
+                          <TableCell>
+                            {element.requiresDrawing && selectedDrawing ? (
+                              <div className="text-xs">
+                                <div className="font-medium">{selectedDrawing.code}</div>
+                                <div className="text-muted-foreground">
+                                  Rev.{selectedDrawing.revisionNo} ({selectedDrawing.revisionDate})
+                                </div>
+                              </div>
+                            ) : element.requiresDrawing ? (
+                              <span className="text-xs text-muted-foreground">도면 미선택</span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <Select
                               value={checklistItem?.status || "not-ready"}
