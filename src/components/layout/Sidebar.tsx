@@ -95,6 +95,8 @@ const navigation: NavItem[] = [
       { title: "사업계획", href: "/management/business-plan", icon: TrendingUp },
       { title: "경영검토", href: "/management/review", icon: FileText },
       { title: "리스크평가", href: "/management/risk", icon: AlertTriangle },
+      { title: "이해관계자 분석", href: "/management/stakeholders", icon: UserCheck },
+      { title: "문서관리", href: "/management/documents", icon: FileText },
       { title: "KPI 성과지표", href: "/kpi/results", icon: BarChart3 },
     ],
   },
@@ -114,6 +116,7 @@ const navigation: NavItem[] = [
       { title: "조사계획/실적", href: "/customer/satisfaction", icon: ClipboardCheck },
       { title: "고객불만관리", href: "/customer/complaints", icon: Megaphone },
       { title: "클레임분석", href: "/customer/claims", icon: BarChart3 },
+      { title: "고객 스코어카드", href: "/customer/scorecard", icon: BarChart3 },
     ],
   },
   {
@@ -124,6 +127,7 @@ const navigation: NavItem[] = [
       { title: "교육실적", href: "/training/records", icon: ClipboardCheck },
       { title: "자격인증기준", href: "/training/standards", icon: FileText },
       { title: "자격인증평가", href: "/training/assessments", icon: ClipboardCheck },
+      { title: "인력관리(정원/결원)", href: "/hr/manpower", icon: Users },
     ],
   },
   {
@@ -133,6 +137,7 @@ const navigation: NavItem[] = [
       { title: "수주관리", href: "/sales/orders", icon: FileText },
       { title: "업체선정", href: "/sales/vendor-selection", icon: ClipboardCheck },
       { title: "고객재산관리", href: "/sales/customer-assets", icon: Package },
+      { title: "매출/매입 실적", href: "/sales/revenue", icon: TrendingUp },
     ],
   },
   {
@@ -145,6 +150,7 @@ const navigation: NavItem[] = [
       { title: "F/PROOF 검증", href: "/production/fproof", icon: ClipboardCheck },
       { title: "토르크/조도관리", href: "/production/torque", icon: Gauge },
       { title: "건조로관리", href: "/production/oven", icon: Wrench },
+      { title: "공정개선 활동", href: "/production/improvement", icon: TrendingUp },
     ],
   },
   {
@@ -165,6 +171,7 @@ const navigation: NavItem[] = [
       { title: "금형일상점검", href: "/daily/mold-check", icon: ClipboardCheck },
       { title: "금형습합/세척", href: "/mold/cleaning", icon: Wrench },
       { title: "금형보수실적", href: "/mold/repair", icon: Wrench },
+      { title: "금형 스페어파트", href: "/mold/spare-parts", icon: Package },
       { title: "지그관리대장", href: "/jig/list", icon: FileText },
       { title: "지그점검", href: "/daily/jig-check", icon: ClipboardCheck },
     ],
@@ -196,6 +203,7 @@ const navigation: NavItem[] = [
       { title: "공급자인도성과", href: "/supplier/delivery", icon: BarChart3 },
       { title: "공급자평가", href: "/supplier/evaluations", icon: ClipboardCheck },
       { title: "업체실태조사", href: "/supplier/survey", icon: FileText },
+      { title: "공급자 육성/개발", href: "/supplier/development", icon: TrendingUp },
       { title: "대여자산관리", href: "/supplier/assets", icon: Package },
     ],
   },
@@ -207,6 +215,7 @@ const navigation: NavItem[] = [
       { title: "자재수불부", href: "/material/ledger", icon: FileText },
       { title: "재고회전율", href: "/material/turnover", icon: BarChart3 },
       { title: "인도성과율", href: "/material/delivery", icon: TrendingUp },
+      { title: "운송비/물류비", href: "/material/transport-cost", icon: Truck },
     ],
   },
   {
@@ -219,6 +228,10 @@ const navigation: NavItem[] = [
       { title: "출하검사", href: "/quality/shipping", icon: ClipboardCheck },
       { title: "한도견본관리", href: "/inspection/limit-samples", icon: FileText },
       { title: "공정능력평가", href: "/equipment/capability", icon: BarChart3 },
+      { title: "검사 성적서(유검사)", href: "/inspection/test-report", icon: FileText },
+      { title: "유/무검사 전환이력", href: "/inspection/switch-history", icon: RefreshCw },
+      { title: "샘플검사 이력", href: "/inspection/sample-history", icon: ClipboardCheck },
+      { title: "치수/중량 관리", href: "/quality/dimension", icon: Ruler },
     ],
   },
   {
@@ -271,6 +284,7 @@ const navigation: NavItem[] = [
     children: [
       { title: "관리기준", href: "/housekeeping/standards", icon: FileText },
       { title: "평가/개선", href: "/housekeeping/evaluation", icon: ClipboardCheck },
+      { title: "현장 게시판", href: "/quality/bulletin", icon: Megaphone },
     ],
   },
   {
